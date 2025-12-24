@@ -1,0 +1,581 @@
+{
+  "course": {
+    "id": "web_fullstack",
+    "name": "Web全栈开发",
+    "description": "前后端开发技术，包括HTML/CSS/JavaScript、Vue框架、Node.js后端开发、数据库等"
+  },
+  "chapters": [
+    {
+      "id": "web_ch01",
+      "name": "HTML基础",
+      "order": 1,
+      "knowledge_points": [
+        {
+          "id": "web_kp_html_structure",
+          "name": "HTML文档结构",
+          "description": "DOCTYPE声明、html、head、body标签的组织结构",
+          "keywords": ["DOCTYPE", "html", "head", "body", "文档结构"]
+        },
+        {
+          "id": "web_kp_html_text",
+          "name": "文本标签",
+          "description": "h1-h6、p、span、strong、em等文本相关标签",
+          "keywords": ["h1", "p", "span", "strong", "em", "标题", "段落"]
+        },
+        {
+          "id": "web_kp_html_link",
+          "name": "链接与图片",
+          "description": "a标签、img标签、href和src属性",
+          "keywords": ["a", "img", "href", "src", "链接", "图片"]
+        },
+        {
+          "id": "web_kp_html_list",
+          "name": "列表标签",
+          "description": "ul、ol、li标签，有序列表和无序列表",
+          "keywords": ["ul", "ol", "li", "列表", "有序", "无序"]
+        },
+        {
+          "id": "web_kp_html_table",
+          "name": "表格标签",
+          "description": "table、tr、td、th标签，表格结构",
+          "keywords": ["table", "tr", "td", "th", "表格"]
+        },
+        {
+          "id": "web_kp_html_form",
+          "name": "表单基础",
+          "description": "form、input、button、select、textarea等表单元素",
+          "keywords": ["form", "input", "button", "select", "textarea", "表单"]
+        },
+        {
+          "id": "web_kp_html_semantic",
+          "name": "语义化标签",
+          "description": "header、footer、nav、main、article、section等HTML5语义标签",
+          "keywords": ["header", "footer", "nav", "main", "article", "section", "语义化"]
+        },
+        {
+          "id": "web_kp_html_div",
+          "name": "div与布局",
+          "description": "div标签的作用、id和class属性",
+          "keywords": ["div", "id", "class", "容器", "布局"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch02",
+      "name": "CSS基础",
+      "order": 2,
+      "knowledge_points": [
+        {
+          "id": "web_kp_css_selector",
+          "name": "CSS选择器",
+          "description": "元素选择器、类选择器、ID选择器、组合选择器",
+          "keywords": ["选择器", "class", "id", "后代选择器", "子选择器"]
+        },
+        {
+          "id": "web_kp_css_box",
+          "name": "盒模型",
+          "description": "content、padding、border、margin的概念和计算",
+          "keywords": ["盒模型", "content", "padding", "border", "margin", "box-sizing"]
+        },
+        {
+          "id": "web_kp_css_text",
+          "name": "文本样式",
+          "description": "font-size、color、text-align、line-height等属性",
+          "keywords": ["font-size", "color", "text-align", "line-height", "字体"]
+        },
+        {
+          "id": "web_kp_css_background",
+          "name": "背景样式",
+          "description": "background-color、background-image、background-size等属性",
+          "keywords": ["background", "背景颜色", "背景图片"]
+        },
+        {
+          "id": "web_kp_css_display",
+          "name": "display属性",
+          "description": "block、inline、inline-block、none的区别和使用",
+          "keywords": ["display", "block", "inline", "inline-block", "none"]
+        },
+        {
+          "id": "web_kp_css_position",
+          "name": "定位",
+          "description": "static、relative、absolute、fixed、sticky定位方式",
+          "keywords": ["position", "relative", "absolute", "fixed", "sticky", "定位"]
+        },
+        {
+          "id": "web_kp_css_float",
+          "name": "浮动",
+          "description": "float属性、清除浮动的方法",
+          "keywords": ["float", "clear", "浮动", "清除浮动"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch03",
+      "name": "CSS进阶",
+      "order": 3,
+      "knowledge_points": [
+        {
+          "id": "web_kp_css_flexbox",
+          "name": "Flexbox布局",
+          "description": "flex容器属性、flex项目属性、主轴和交叉轴",
+          "keywords": ["flex", "flexbox", "justify-content", "align-items", "flex-direction"]
+        },
+        {
+          "id": "web_kp_css_grid",
+          "name": "Grid布局",
+          "description": "grid容器、grid-template-columns、grid-template-rows",
+          "keywords": ["grid", "grid-template", "网格布局", "fr单位"]
+        },
+        {
+          "id": "web_kp_css_responsive",
+          "name": "响应式设计",
+          "description": "媒体查询、viewport、移动优先设计",
+          "keywords": ["media query", "响应式", "viewport", "@media"]
+        },
+        {
+          "id": "web_kp_css_transition",
+          "name": "过渡动画",
+          "description": "transition属性、过渡效果的实现",
+          "keywords": ["transition", "过渡", "动画", "ease"]
+        },
+        {
+          "id": "web_kp_css_animation",
+          "name": "CSS动画",
+          "description": "keyframes、animation属性的使用",
+          "keywords": ["animation", "keyframes", "动画", "关键帧"]
+        },
+        {
+          "id": "web_kp_css_pseudo",
+          "name": "伪类与伪元素",
+          "description": ":hover、:focus、::before、::after等",
+          "keywords": ["伪类", "伪元素", "hover", "before", "after", "focus"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch04",
+      "name": "JavaScript基础",
+      "order": 4,
+      "knowledge_points": [
+        {
+          "id": "web_kp_js_variable",
+          "name": "变量声明",
+          "description": "var、let、const的区别和使用场景",
+          "keywords": ["var", "let", "const", "变量", "常量", "作用域"]
+        },
+        {
+          "id": "web_kp_js_datatype",
+          "name": "数据类型",
+          "description": "原始类型和引用类型、typeof运算符",
+          "keywords": ["string", "number", "boolean", "object", "array", "typeof"]
+        },
+        {
+          "id": "web_kp_js_operator",
+          "name": "运算符",
+          "description": "算术、比较、逻辑、三元运算符、展开运算符",
+          "keywords": ["运算符", "===", "!==", "三元运算符", "..."]
+        },
+        {
+          "id": "web_kp_js_condition",
+          "name": "条件语句",
+          "description": "if-else、switch-case语句",
+          "keywords": ["if", "else", "switch", "case", "条件判断"]
+        },
+        {
+          "id": "web_kp_js_loop",
+          "name": "循环语句",
+          "description": "for、while、for...of、for...in循环",
+          "keywords": ["for", "while", "for...of", "for...in", "循环"]
+        },
+        {
+          "id": "web_kp_js_function",
+          "name": "函数定义",
+          "description": "函数声明、函数表达式、箭头函数",
+          "keywords": ["function", "箭头函数", "=>", "函数"]
+        },
+        {
+          "id": "web_kp_js_scope",
+          "name": "作用域与闭包",
+          "description": "词法作用域、闭包的概念和应用",
+          "keywords": ["作用域", "闭包", "closure", "词法作用域"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch05",
+      "name": "JavaScript进阶",
+      "order": 5,
+      "knowledge_points": [
+        {
+          "id": "web_kp_js_array_methods",
+          "name": "数组方法",
+          "description": "map、filter、reduce、forEach、find等高阶函数",
+          "keywords": ["map", "filter", "reduce", "forEach", "find", "数组方法"]
+        },
+        {
+          "id": "web_kp_js_object",
+          "name": "对象操作",
+          "description": "对象创建、属性访问、解构赋值、Object方法",
+          "keywords": ["对象", "解构", "Object.keys", "Object.values"]
+        },
+        {
+          "id": "web_kp_js_class",
+          "name": "ES6类",
+          "description": "class语法、constructor、继承、super",
+          "keywords": ["class", "constructor", "extends", "super", "继承"]
+        },
+        {
+          "id": "web_kp_js_module",
+          "name": "ES6模块",
+          "description": "import、export、default导出",
+          "keywords": ["import", "export", "模块", "default"]
+        },
+        {
+          "id": "web_kp_js_promise",
+          "name": "Promise",
+          "description": "Promise的使用、then、catch、Promise.all",
+          "keywords": ["Promise", "then", "catch", "异步", "Promise.all"]
+        },
+        {
+          "id": "web_kp_js_async",
+          "name": "async/await",
+          "description": "异步函数、await关键字、错误处理",
+          "keywords": ["async", "await", "异步", "同步写法"]
+        },
+        {
+          "id": "web_kp_js_destructure",
+          "name": "解构赋值",
+          "description": "数组解构、对象解构、函数参数解构",
+          "keywords": ["解构", "destructure", "数组解构", "对象解构"]
+        },
+        {
+          "id": "web_kp_js_template",
+          "name": "模板字符串",
+          "description": "反引号、变量插值、多行字符串",
+          "keywords": ["模板字符串", "反引号", "插值", "${}", "多行"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch06",
+      "name": "DOM操作",
+      "order": 6,
+      "knowledge_points": [
+        {
+          "id": "web_kp_dom_select",
+          "name": "DOM元素选择",
+          "description": "getElementById、querySelector、querySelectorAll",
+          "keywords": ["getElementById", "querySelector", "querySelectorAll", "选择器"]
+        },
+        {
+          "id": "web_kp_dom_modify",
+          "name": "DOM元素修改",
+          "description": "innerHTML、textContent、setAttribute、classList",
+          "keywords": ["innerHTML", "textContent", "setAttribute", "classList"]
+        },
+        {
+          "id": "web_kp_dom_create",
+          "name": "DOM元素创建与删除",
+          "description": "createElement、appendChild、removeChild、insertBefore",
+          "keywords": ["createElement", "appendChild", "removeChild", "创建元素"]
+        },
+        {
+          "id": "web_kp_dom_event",
+          "name": "事件处理",
+          "description": "addEventListener、事件对象、事件类型",
+          "keywords": ["addEventListener", "click", "submit", "事件", "监听"]
+        },
+        {
+          "id": "web_kp_dom_bubble",
+          "name": "事件冒泡与捕获",
+          "description": "事件传播机制、stopPropagation、事件委托",
+          "keywords": ["冒泡", "捕获", "stopPropagation", "事件委托"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch07",
+      "name": "Vue基础",
+      "order": 7,
+      "knowledge_points": [
+        {
+          "id": "web_kp_vue_intro",
+          "name": "Vue简介与安装",
+          "description": "Vue框架特点、创建Vue项目、项目结构",
+          "keywords": ["Vue", "Vite", "create-vue", "SFC"]
+        },
+        {
+          "id": "web_kp_vue_template",
+          "name": "模板语法",
+          "description": "插值表达式、v-bind、v-on、指令语法",
+          "keywords": ["模板", "插值", "v-bind", "v-on", "指令"]
+        },
+        {
+          "id": "web_kp_vue_bindvalue",
+          "name": "数据绑定",
+          "description": "响应式数据、ref、reactive、v-model",
+          "keywords": ["ref", "reactive", "v-model", "响应式", "双向绑定"]
+        },
+        {
+          "id": "web_kp_vue_condition",
+          "name": "条件渲染",
+          "description": "v-if、v-else、v-else-if、v-show",
+          "keywords": ["v-if", "v-else", "v-show", "条件渲染"]
+        },
+        {
+          "id": "web_kp_vue_list",
+          "name": "列表渲染",
+          "description": "v-for指令、key属性、列表操作",
+          "keywords": ["v-for", "key", "列表渲染", "遍历"]
+        },
+        {
+          "id": "web_kp_vue_event",
+          "name": "事件处理",
+          "description": "v-on指令、事件修饰符、方法定义",
+          "keywords": ["v-on", "@click", "事件修饰符", "prevent", "stop"]
+        },
+        {
+          "id": "web_kp_vue_computed",
+          "name": "计算属性",
+          "description": "computed的使用、计算属性与方法的区别",
+          "keywords": ["computed", "计算属性", "缓存"]
+        },
+        {
+          "id": "web_kp_vue_watch",
+          "name": "侦听器",
+          "description": "watch的使用、深度监听、immediate选项",
+          "keywords": ["watch", "侦听器", "监听", "deep"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch08",
+      "name": "Vue组件",
+      "order": 8,
+      "knowledge_points": [
+        {
+          "id": "web_kp_vue_component",
+          "name": "组件基础",
+          "description": "组件定义、组件注册、组件使用",
+          "keywords": ["组件", "component", "注册", "SFC"]
+        },
+        {
+          "id": "web_kp_vue_props",
+          "name": "Props传值",
+          "description": "父组件向子组件传递数据、props验证",
+          "keywords": ["props", "父传子", "验证", "default"]
+        },
+        {
+          "id": "web_kp_vue_emit",
+          "name": "自定义事件",
+          "description": "子组件向父组件传递数据、emit",
+          "keywords": ["emit", "子传父", "自定义事件"]
+        },
+        {
+          "id": "web_kp_vue_slot",
+          "name": "插槽",
+          "description": "默认插槽、具名插槽、作用域插槽",
+          "keywords": ["slot", "插槽", "具名插槽", "作用域插槽"]
+        },
+        {
+          "id": "web_kp_vue_lifecycle",
+          "name": "生命周期",
+          "description": "onMounted、onUnmounted等生命周期钩子",
+          "keywords": ["生命周期", "onMounted", "onUnmounted", "钩子"]
+        },
+        {
+          "id": "web_kp_vue_provide",
+          "name": "依赖注入",
+          "description": "provide和inject跨组件通信",
+          "keywords": ["provide", "inject", "依赖注入", "跨组件"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch09",
+      "name": "Vue生态",
+      "order": 9,
+      "knowledge_points": [
+        {
+          "id": "web_kp_vue_router",
+          "name": "Vue Router基础",
+          "description": "路由配置、router-link、router-view",
+          "keywords": ["Vue Router", "路由", "router-link", "router-view"]
+        },
+        {
+          "id": "web_kp_vue_route_params",
+          "name": "路由参数",
+          "description": "动态路由、query参数、params参数",
+          "keywords": ["动态路由", "params", "query", "路由参数"]
+        },
+        {
+          "id": "web_kp_vue_pinia",
+          "name": "Pinia状态管理",
+          "description": "store定义、state、getters、actions",
+          "keywords": ["Pinia", "状态管理", "store", "state"]
+        },
+        {
+          "id": "web_kp_vue_axios",
+          "name": "Axios请求",
+          "description": "HTTP请求、请求拦截、响应拦截",
+          "keywords": ["Axios", "HTTP", "请求", "拦截器"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch10",
+      "name": "Node.js基础",
+      "order": 10,
+      "knowledge_points": [
+        {
+          "id": "web_kp_node_intro",
+          "name": "Node.js简介",
+          "description": "Node.js运行时、npm包管理、package.json",
+          "keywords": ["Node.js", "npm", "package.json", "运行时"]
+        },
+        {
+          "id": "web_kp_node_module",
+          "name": "模块系统",
+          "description": "CommonJS模块、require和module.exports",
+          "keywords": ["require", "module.exports", "CommonJS", "模块"]
+        },
+        {
+          "id": "web_kp_node_fs",
+          "name": "文件系统",
+          "description": "fs模块、读写文件、目录操作",
+          "keywords": ["fs", "readFile", "writeFile", "文件操作"]
+        },
+        {
+          "id": "web_kp_node_path",
+          "name": "路径处理",
+          "description": "path模块、路径拼接、路径解析",
+          "keywords": ["path", "join", "resolve", "路径"]
+        },
+        {
+          "id": "web_kp_node_http",
+          "name": "HTTP模块",
+          "description": "创建HTTP服务器、请求和响应处理",
+          "keywords": ["http", "createServer", "服务器", "请求"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch11",
+      "name": "Express框架",
+      "order": 11,
+      "knowledge_points": [
+        {
+          "id": "web_kp_express_intro",
+          "name": "Express基础",
+          "description": "Express安装、创建应用、启动服务器",
+          "keywords": ["Express", "app", "listen", "框架"]
+        },
+        {
+          "id": "web_kp_express_routing",
+          "name": "路由",
+          "description": "GET、POST等路由方法、路由参数",
+          "keywords": ["路由", "get", "post", "路由参数", "请求方法"]
+        },
+        {
+          "id": "web_kp_express_middleware",
+          "name": "中间件",
+          "description": "中间件概念、app.use、自定义中间件",
+          "keywords": ["中间件", "middleware", "app.use", "next"]
+        },
+        {
+          "id": "web_kp_express_static",
+          "name": "静态文件",
+          "description": "express.static托管静态资源",
+          "keywords": ["static", "静态文件", "托管"]
+        },
+        {
+          "id": "web_kp_express_json",
+          "name": "请求体解析",
+          "description": "express.json、express.urlencoded",
+          "keywords": ["json", "urlencoded", "请求体", "解析"]
+        },
+        {
+          "id": "web_kp_express_error",
+          "name": "错误处理",
+          "description": "错误处理中间件、异常捕获",
+          "keywords": ["错误处理", "error", "异常", "中间件"]
+        }
+      ]
+    },
+    {
+      "id": "web_ch12",
+      "name": "数据库基础",
+      "order": 12,
+      "knowledge_points": [
+        {
+          "id": "web_kp_db_sql",
+          "name": "SQL基础",
+          "description": "SELECT、INSERT、UPDATE、DELETE语句",
+          "keywords": ["SQL", "SELECT", "INSERT", "UPDATE", "DELETE"]
+        },
+        {
+          "id": "web_kp_db_mysql",
+          "name": "MySQL使用",
+          "description": "MySQL安装、连接、基本操作",
+          "keywords": ["MySQL", "数据库", "表", "字段"]
+        },
+        {
+          "id": "web_kp_db_mongodb",
+          "name": "MongoDB基础",
+          "description": "文档数据库、集合、CRUD操作",
+          "keywords": ["MongoDB", "文档", "集合", "NoSQL"]
+        },
+        {
+          "id": "web_kp_db_orm",
+          "name": "ORM概念",
+          "description": "对象关系映射、Sequelize/Mongoose简介",
+          "keywords": ["ORM", "Sequelize", "Mongoose", "对象映射"]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {"source": "web_kp_html_structure", "target": "web_kp_html_div", "type": "relates_to"},
+    {"source": "web_kp_html_div", "target": "web_kp_css_selector", "type": "relates_to"},
+    {"source": "web_kp_html_form", "target": "web_kp_dom_event", "type": "relates_to"},
+    {"source": "web_kp_css_selector", "target": "web_kp_css_box", "type": "relates_to"},
+    {"source": "web_kp_css_display", "target": "web_kp_css_flexbox", "type": "relates_to"},
+    {"source": "web_kp_css_display", "target": "web_kp_css_grid", "type": "relates_to"},
+    {"source": "web_kp_css_position", "target": "web_kp_css_float", "type": "relates_to"},
+    {"source": "web_kp_css_flexbox", "target": "web_kp_css_responsive", "type": "relates_to"},
+    {"source": "web_kp_css_transition", "target": "web_kp_css_animation", "type": "relates_to"},
+    {"source": "web_kp_js_variable", "target": "web_kp_js_datatype", "type": "relates_to"},
+    {"source": "web_kp_js_variable", "target": "web_kp_js_scope", "type": "relates_to"},
+    {"source": "web_kp_js_function", "target": "web_kp_js_scope", "type": "relates_to"},
+    {"source": "web_kp_js_loop", "target": "web_kp_js_array_methods", "type": "relates_to"},
+    {"source": "web_kp_js_function", "target": "web_kp_js_promise", "type": "relates_to"},
+    {"source": "web_kp_js_promise", "target": "web_kp_js_async", "type": "relates_to"},
+    {"source": "web_kp_js_object", "target": "web_kp_js_destructure", "type": "relates_to"},
+    {"source": "web_kp_js_class", "target": "web_kp_js_object", "type": "relates_to"},
+    {"source": "web_kp_dom_select", "target": "web_kp_dom_modify", "type": "relates_to"},
+    {"source": "web_kp_dom_select", "target": "web_kp_dom_create", "type": "relates_to"},
+    {"source": "web_kp_dom_event", "target": "web_kp_dom_bubble", "type": "relates_to"},
+    {"source": "web_kp_vue_template", "target": "web_kp_vue_bindvalue", "type": "relates_to"},
+    {"source": "web_kp_vue_bindvalue", "target": "web_kp_vue_computed", "type": "relates_to"},
+    {"source": "web_kp_vue_bindvalue", "target": "web_kp_vue_watch", "type": "relates_to"},
+    {"source": "web_kp_vue_condition", "target": "web_kp_vue_list", "type": "relates_to"},
+    {"source": "web_kp_vue_event", "target": "web_kp_vue_emit", "type": "relates_to"},
+    {"source": "web_kp_vue_component", "target": "web_kp_vue_props", "type": "relates_to"},
+    {"source": "web_kp_vue_component", "target": "web_kp_vue_emit", "type": "relates_to"},
+    {"source": "web_kp_vue_component", "target": "web_kp_vue_slot", "type": "relates_to"},
+    {"source": "web_kp_vue_component", "target": "web_kp_vue_lifecycle", "type": "relates_to"},
+    {"source": "web_kp_vue_router", "target": "web_kp_vue_route_params", "type": "relates_to"},
+    {"source": "web_kp_vue_axios", "target": "web_kp_js_async", "type": "relates_to"},
+    {"source": "web_kp_node_intro", "target": "web_kp_node_module", "type": "relates_to"},
+    {"source": "web_kp_node_module", "target": "web_kp_js_module", "type": "relates_to"},
+    {"source": "web_kp_node_http", "target": "web_kp_express_intro", "type": "relates_to"},
+    {"source": "web_kp_express_intro", "target": "web_kp_express_routing", "type": "relates_to"},
+    {"source": "web_kp_express_routing", "target": "web_kp_express_middleware", "type": "relates_to"},
+    {"source": "web_kp_express_middleware", "target": "web_kp_express_error", "type": "relates_to"},
+    {"source": "web_kp_db_sql", "target": "web_kp_db_mysql", "type": "relates_to"},
+    {"source": "web_kp_db_mysql", "target": "web_kp_db_orm", "type": "relates_to"},
+    {"source": "web_kp_db_mongodb", "target": "web_kp_db_orm", "type": "relates_to"},
+    {"source": "web_kp_html_structure", "target": "web_kp_html_semantic", "type": "relates_to"},
+    {"source": "web_kp_css_pseudo", "target": "web_kp_css_transition", "type": "relates_to"}
+  ]
+}

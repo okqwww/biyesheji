@@ -1,0 +1,436 @@
+{
+  "course": {
+    "id": "python_basics",
+    "name": "Python编程基础",
+    "description": "Python语言基础知识，包括语法、数据类型、控制流程、函数、面向对象编程等核心内容"
+  },
+  "chapters": [
+    {
+      "id": "py_ch01",
+      "name": "Python环境与基础语法",
+      "order": 1,
+      "knowledge_points": [
+        {
+          "id": "py_kp_env_setup",
+          "name": "Python环境安装与配置",
+          "description": "Python解释器的安装、环境变量配置、IDE选择与使用",
+          "keywords": ["安装", "环境变量", "IDE", "PyCharm", "VS Code"]
+        },
+        {
+          "id": "py_kp_first_program",
+          "name": "第一个Python程序",
+          "description": "print函数的使用、程序的运行方式、交互式解释器",
+          "keywords": ["print", "Hello World", "解释器", "脚本"]
+        },
+        {
+          "id": "py_kp_comment",
+          "name": "注释",
+          "description": "单行注释、多行注释的语法和使用规范",
+          "keywords": ["#", "单行注释", "多行注释", "文档字符串"]
+        },
+        {
+          "id": "py_kp_variable",
+          "name": "变量定义与命名",
+          "description": "变量的定义、命名规则、命名规范、动态类型特性",
+          "keywords": ["变量", "命名规则", "标识符", "动态类型"]
+        },
+        {
+          "id": "py_kp_input",
+          "name": "用户输入",
+          "description": "input函数获取用户输入、输入类型转换",
+          "keywords": ["input", "用户输入", "类型转换"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch02",
+      "name": "数据类型",
+      "order": 2,
+      "knowledge_points": [
+        {
+          "id": "py_kp_int",
+          "name": "整数类型",
+          "description": "整数的表示、不同进制、整数运算、大整数支持",
+          "keywords": ["int", "整数", "进制", "二进制", "十六进制"]
+        },
+        {
+          "id": "py_kp_float",
+          "name": "浮点数类型",
+          "description": "浮点数的表示、精度问题、科学计数法",
+          "keywords": ["float", "浮点数", "精度", "科学计数法"]
+        },
+        {
+          "id": "py_kp_string",
+          "name": "字符串类型",
+          "description": "字符串的定义、引号使用、转义字符、原始字符串",
+          "keywords": ["str", "字符串", "引号", "转义字符", "r字符串"]
+        },
+        {
+          "id": "py_kp_string_methods",
+          "name": "字符串常用方法",
+          "description": "字符串的split、join、strip、replace、find等方法",
+          "keywords": ["split", "join", "strip", "replace", "find", "upper", "lower"]
+        },
+        {
+          "id": "py_kp_string_format",
+          "name": "字符串格式化",
+          "description": "f-string、format方法、%格式化",
+          "keywords": ["f-string", "format", "格式化", "占位符"]
+        },
+        {
+          "id": "py_kp_bool",
+          "name": "布尔类型",
+          "description": "True和False、布尔运算、类型转换",
+          "keywords": ["bool", "True", "False", "布尔"]
+        },
+        {
+          "id": "py_kp_none",
+          "name": "None类型",
+          "description": "None的含义和使用场景",
+          "keywords": ["None", "空值", "NoneType"]
+        },
+        {
+          "id": "py_kp_type_convert",
+          "name": "类型转换",
+          "description": "int()、float()、str()、bool()等类型转换函数",
+          "keywords": ["类型转换", "int()", "float()", "str()"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch03",
+      "name": "运算符与表达式",
+      "order": 3,
+      "knowledge_points": [
+        {
+          "id": "py_kp_arithmetic",
+          "name": "算术运算符",
+          "description": "加减乘除、取余、整除、幂运算",
+          "keywords": ["+", "-", "*", "/", "%", "//", "**"]
+        },
+        {
+          "id": "py_kp_comparison",
+          "name": "比较运算符",
+          "description": "等于、不等于、大于、小于、大于等于、小于等于",
+          "keywords": ["==", "!=", ">", "<", ">=", "<="]
+        },
+        {
+          "id": "py_kp_logical",
+          "name": "逻辑运算符",
+          "description": "and、or、not的使用和短路求值",
+          "keywords": ["and", "or", "not", "逻辑运算", "短路求值"]
+        },
+        {
+          "id": "py_kp_assignment",
+          "name": "赋值运算符",
+          "description": "=及复合赋值运算符+=、-=等",
+          "keywords": ["=", "+=", "-=", "*=", "/=", "赋值"]
+        },
+        {
+          "id": "py_kp_membership",
+          "name": "成员运算符",
+          "description": "in和not in的使用",
+          "keywords": ["in", "not in", "成员", "包含"]
+        },
+        {
+          "id": "py_kp_identity",
+          "name": "身份运算符",
+          "description": "is和is not的使用、与==的区别",
+          "keywords": ["is", "is not", "身份", "id"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch04",
+      "name": "流程控制",
+      "order": 4,
+      "knowledge_points": [
+        {
+          "id": "py_kp_if",
+          "name": "if条件语句",
+          "description": "if、elif、else的语法和使用",
+          "keywords": ["if", "elif", "else", "条件判断"]
+        },
+        {
+          "id": "py_kp_if_nested",
+          "name": "嵌套条件语句",
+          "description": "条件语句的嵌套使用、多条件判断",
+          "keywords": ["嵌套if", "多条件", "嵌套"]
+        },
+        {
+          "id": "py_kp_ternary",
+          "name": "三元表达式",
+          "description": "Python中的条件表达式写法",
+          "keywords": ["三元表达式", "条件表达式", "if else"]
+        },
+        {
+          "id": "py_kp_for",
+          "name": "for循环",
+          "description": "for循环语法、遍历序列、range函数",
+          "keywords": ["for", "循环", "遍历", "range", "迭代"]
+        },
+        {
+          "id": "py_kp_while",
+          "name": "while循环",
+          "description": "while循环语法、循环条件、无限循环",
+          "keywords": ["while", "循环", "条件循环"]
+        },
+        {
+          "id": "py_kp_break",
+          "name": "break语句",
+          "description": "break跳出循环的使用",
+          "keywords": ["break", "跳出循环", "终止"]
+        },
+        {
+          "id": "py_kp_continue",
+          "name": "continue语句",
+          "description": "continue跳过本次循环的使用",
+          "keywords": ["continue", "跳过", "继续"]
+        },
+        {
+          "id": "py_kp_loop_else",
+          "name": "循环else子句",
+          "description": "for-else和while-else的特殊用法",
+          "keywords": ["else", "循环else", "正常结束"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch05",
+      "name": "数据结构",
+      "order": 5,
+      "knowledge_points": [
+        {
+          "id": "py_kp_list",
+          "name": "列表基础",
+          "description": "列表的创建、访问、基本特性",
+          "keywords": ["list", "列表", "[]", "索引"]
+        },
+        {
+          "id": "py_kp_list_methods",
+          "name": "列表常用方法",
+          "description": "append、insert、remove、pop、sort等方法",
+          "keywords": ["append", "insert", "remove", "pop", "sort", "reverse"]
+        },
+        {
+          "id": "py_kp_list_slice",
+          "name": "列表切片",
+          "description": "切片语法、步长、负索引切片",
+          "keywords": ["切片", "slice", "步长", "负索引"]
+        },
+        {
+          "id": "py_kp_list_comprehension",
+          "name": "列表推导式",
+          "description": "列表推导式的语法和使用场景",
+          "keywords": ["列表推导式", "comprehension", "生成列表"]
+        },
+        {
+          "id": "py_kp_tuple",
+          "name": "元组",
+          "description": "元组的创建、不可变性、解包",
+          "keywords": ["tuple", "元组", "不可变", "解包"]
+        },
+        {
+          "id": "py_kp_dict",
+          "name": "字典基础",
+          "description": "字典的创建、键值对、访问方式",
+          "keywords": ["dict", "字典", "键值对", "key", "value"]
+        },
+        {
+          "id": "py_kp_dict_methods",
+          "name": "字典常用方法",
+          "description": "keys、values、items、get、update等方法",
+          "keywords": ["keys", "values", "items", "get", "update"]
+        },
+        {
+          "id": "py_kp_set",
+          "name": "集合",
+          "description": "集合的创建、去重特性、集合运算",
+          "keywords": ["set", "集合", "去重", "交集", "并集", "差集"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch06",
+      "name": "函数",
+      "order": 6,
+      "knowledge_points": [
+        {
+          "id": "py_kp_func_def",
+          "name": "函数定义与调用",
+          "description": "def关键字、函数命名、函数调用",
+          "keywords": ["def", "函数", "定义", "调用"]
+        },
+        {
+          "id": "py_kp_func_param",
+          "name": "函数参数",
+          "description": "位置参数、关键字参数、默认参数",
+          "keywords": ["参数", "位置参数", "关键字参数", "默认参数"]
+        },
+        {
+          "id": "py_kp_func_args",
+          "name": "可变参数",
+          "description": "*args和**kwargs的使用",
+          "keywords": ["*args", "**kwargs", "可变参数", "打包", "解包"]
+        },
+        {
+          "id": "py_kp_func_return",
+          "name": "返回值",
+          "description": "return语句、多返回值、无返回值",
+          "keywords": ["return", "返回值", "多返回值"]
+        },
+        {
+          "id": "py_kp_scope",
+          "name": "变量作用域",
+          "description": "局部变量、全局变量、global关键字、LEGB规则",
+          "keywords": ["作用域", "局部变量", "全局变量", "global", "LEGB"]
+        },
+        {
+          "id": "py_kp_lambda",
+          "name": "匿名函数",
+          "description": "lambda表达式的语法和使用场景",
+          "keywords": ["lambda", "匿名函数", "表达式"]
+        },
+        {
+          "id": "py_kp_recursion",
+          "name": "递归函数",
+          "description": "递归的概念、递归条件、递归应用",
+          "keywords": ["递归", "recursion", "基准条件", "递归调用"]
+        },
+        {
+          "id": "py_kp_builtin_func",
+          "name": "常用内置函数",
+          "description": "len、max、min、sum、sorted、enumerate、zip等",
+          "keywords": ["len", "max", "min", "sum", "sorted", "enumerate", "zip", "map", "filter"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch07",
+      "name": "文件操作",
+      "order": 7,
+      "knowledge_points": [
+        {
+          "id": "py_kp_file_open",
+          "name": "文件打开与关闭",
+          "description": "open函数、文件模式、close方法",
+          "keywords": ["open", "close", "文件模式", "r", "w", "a"]
+        },
+        {
+          "id": "py_kp_file_read",
+          "name": "文件读取",
+          "description": "read、readline、readlines方法",
+          "keywords": ["read", "readline", "readlines", "读取"]
+        },
+        {
+          "id": "py_kp_file_write",
+          "name": "文件写入",
+          "description": "write、writelines方法、写入模式",
+          "keywords": ["write", "writelines", "写入"]
+        },
+        {
+          "id": "py_kp_file_with",
+          "name": "with语句",
+          "description": "上下文管理器、自动关闭文件",
+          "keywords": ["with", "上下文管理器", "自动关闭"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch08",
+      "name": "异常处理",
+      "order": 8,
+      "knowledge_points": [
+        {
+          "id": "py_kp_exception_type",
+          "name": "常见异常类型",
+          "description": "TypeError、ValueError、IndexError、KeyError等",
+          "keywords": ["异常", "TypeError", "ValueError", "IndexError", "KeyError"]
+        },
+        {
+          "id": "py_kp_try_except",
+          "name": "try-except语句",
+          "description": "异常捕获的基本语法和使用",
+          "keywords": ["try", "except", "异常捕获"]
+        },
+        {
+          "id": "py_kp_try_finally",
+          "name": "finally子句",
+          "description": "finally的执行时机和使用场景",
+          "keywords": ["finally", "清理", "必定执行"]
+        },
+        {
+          "id": "py_kp_raise",
+          "name": "raise语句",
+          "description": "主动抛出异常、自定义异常",
+          "keywords": ["raise", "抛出异常", "自定义异常"]
+        }
+      ]
+    },
+    {
+      "id": "py_ch09",
+      "name": "模块与包",
+      "order": 9,
+      "knowledge_points": [
+        {
+          "id": "py_kp_import",
+          "name": "模块导入",
+          "description": "import语句、from...import语句、as别名",
+          "keywords": ["import", "from", "as", "模块导入"]
+        },
+        {
+          "id": "py_kp_std_module",
+          "name": "常用标准库",
+          "description": "os、sys、random、datetime、math等模块",
+          "keywords": ["os", "sys", "random", "datetime", "math", "标准库"]
+        },
+        {
+          "id": "py_kp_package",
+          "name": "包的概念",
+          "description": "包的结构、__init__.py文件、包的导入",
+          "keywords": ["包", "package", "__init__", "目录结构"]
+        },
+        {
+          "id": "py_kp_pip",
+          "name": "pip包管理",
+          "description": "pip install、pip list、requirements.txt",
+          "keywords": ["pip", "安装", "第三方库", "requirements"]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {"source": "py_kp_variable", "target": "py_kp_type_convert", "type": "relates_to"},
+    {"source": "py_kp_string", "target": "py_kp_string_methods", "type": "relates_to"},
+    {"source": "py_kp_string", "target": "py_kp_string_format", "type": "relates_to"},
+    {"source": "py_kp_for", "target": "py_kp_break", "type": "relates_to"},
+    {"source": "py_kp_for", "target": "py_kp_continue", "type": "relates_to"},
+    {"source": "py_kp_while", "target": "py_kp_break", "type": "relates_to"},
+    {"source": "py_kp_while", "target": "py_kp_continue", "type": "relates_to"},
+    {"source": "py_kp_for", "target": "py_kp_loop_else", "type": "relates_to"},
+    {"source": "py_kp_while", "target": "py_kp_loop_else", "type": "relates_to"},
+    {"source": "py_kp_list", "target": "py_kp_list_methods", "type": "relates_to"},
+    {"source": "py_kp_list", "target": "py_kp_list_slice", "type": "relates_to"},
+    {"source": "py_kp_list", "target": "py_kp_list_comprehension", "type": "relates_to"},
+    {"source": "py_kp_dict", "target": "py_kp_dict_methods", "type": "relates_to"},
+    {"source": "py_kp_func_def", "target": "py_kp_func_param", "type": "relates_to"},
+    {"source": "py_kp_func_param", "target": "py_kp_func_args", "type": "relates_to"},
+    {"source": "py_kp_func_def", "target": "py_kp_func_return", "type": "relates_to"},
+    {"source": "py_kp_func_def", "target": "py_kp_scope", "type": "relates_to"},
+    {"source": "py_kp_func_def", "target": "py_kp_lambda", "type": "relates_to"},
+    {"source": "py_kp_func_def", "target": "py_kp_recursion", "type": "relates_to"},
+    {"source": "py_kp_file_open", "target": "py_kp_file_read", "type": "relates_to"},
+    {"source": "py_kp_file_open", "target": "py_kp_file_write", "type": "relates_to"},
+    {"source": "py_kp_file_open", "target": "py_kp_file_with", "type": "relates_to"},
+    {"source": "py_kp_try_except", "target": "py_kp_exception_type", "type": "relates_to"},
+    {"source": "py_kp_try_except", "target": "py_kp_try_finally", "type": "relates_to"},
+    {"source": "py_kp_try_except", "target": "py_kp_raise", "type": "relates_to"},
+    {"source": "py_kp_import", "target": "py_kp_std_module", "type": "relates_to"},
+    {"source": "py_kp_import", "target": "py_kp_package", "type": "relates_to"},
+    {"source": "py_kp_package", "target": "py_kp_pip", "type": "relates_to"},
+    {"source": "py_kp_for", "target": "py_kp_list", "type": "relates_to"},
+    {"source": "py_kp_comparison", "target": "py_kp_if", "type": "relates_to"},
+    {"source": "py_kp_logical", "target": "py_kp_if", "type": "relates_to"},
+    {"source": "py_kp_bool", "target": "py_kp_if", "type": "relates_to"}
+  ]
+}

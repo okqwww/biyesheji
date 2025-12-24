@@ -1,0 +1,13 @@
+backend/.env
+**/.env
+JDK21/
+frontend/node_modules/
+neo4j community/
+**/__pycache__/
+*.pyc
+*.pyo
+backend/.env
+backend/.env*
+**/logs/
+*.log
+*.log.*

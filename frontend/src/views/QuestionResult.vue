@@ -143,6 +143,7 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
 
 .q-index {
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .q-tags {
@@ -165,6 +166,7 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
 .q-content {
   font-size: 14px;
   line-height: 1.8;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .options {
@@ -178,10 +180,12 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.18);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .answer {
   font-weight: 650;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .explain,

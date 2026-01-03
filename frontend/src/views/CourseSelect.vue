@@ -84,12 +84,14 @@ function goHome() {
   font-size: 18px;
   font-weight: 650;
   letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .course-desc {
   margin-top: 8px;
   font-size: 13px;
   line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .course-meta {

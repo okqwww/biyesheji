@@ -1,15 +1,33 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { useCourseStore } from '../stores/course'
 import { useQuestionStore } from '../stores/question'
+import { exportMarkdown, saveQuestions } from '../api/questions'
 
 const router = useRouter()
 const courseStore = useCourseStore()
 const questionStore = useQuestionStore()
 
 const questions = computed(() => questionStore.generatedQuestions || [])
+const courseName = computed(() => courseStore.currentCourse?.name || questionStore.courseId || '')
+
+// 保存状态
+const saving = ref(false)
+const saved = ref(false)
+
+// 判断是否为解答题
+function isShortAnswer(question) {
+  return question.type === 'short_answer' || question.type === '解答题'
+}
+
+// 检查文本是否包含代码（多行且有缩进）
+function hasCodeBlock(text) {
+  if (!text) return false
+  const lines = text.split('\n')
+  return lines.length > 2 && lines.some(line => line.startsWith('    ') || line.startsWith('\t'))
+}
 
 function goBack() {
   router.back()
@@ -31,10 +49,96 @@ async function regenerate() {
     return
   }
 
+  // 重置保存状态
+  saved.value = false
   await questionStore.generate(questionStore.lastGeneratePayload)
 }
 
-const courseName = computed(() => courseStore.currentCourse?.name || questionStore.courseId || '')
+async function exportQuestions() {
+  if (!questions.value || questions.value.length === 0) {
+    ElMessage.warning('暂无题目可导出')
+    return
+  }
+
+  try {
+    ElMessage.info('正在生成导出文件...')
+    
+    // 调用导出API，返回Markdown文本
+    const markdown = await exportMarkdown(questions.value)
+    
+    // 创建Blob对象
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // 生成文件名：题目_课程名_日期.md
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const filename = `题目_${courseName.value || '未知课程'}_${date}.md`
+    link.download = filename
+    
+    // 触发下载
+    document.body.appendChild(link)
+    link.click()
+    
+    // 清理
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    ElMessage.success('导出成功！')
+  } catch (error) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败，请重试')
+  }
+}
+
+async function saveQuestionsToDb() {
+  if (!questions.value || questions.value.length === 0) {
+    ElMessage.warning('暂无题目可保存')
+    return
+  }
+
+  if (!questionStore.selectedKnowledgePointIds || questionStore.selectedKnowledgePointIds.length === 0) {
+    ElMessage.warning('缺少知识点信息，无法保存')
+    return
+  }
+
+  if (saved.value) {
+    try {
+      await ElMessageBox.confirm('题目已保存过，是否重复保存？', '提示', {
+        confirmButtonText: '保存',
+        cancelButtonText: '取消',
+        type: 'warning',
+      })
+    } catch {
+      return
+    }
+  }
+
+  saving.value = true
+  try {
+    const payload = {
+      questions: questions.value,
+      knowledge_point_ids: questionStore.selectedKnowledgePointIds
+    }
+    
+    const result = await saveQuestions(payload)
+    
+    if (result.success) {
+      saved.value = true
+      ElMessage.success(result.message || `成功保存 ${questions.value.length} 道题目`)
+    } else {
+      ElMessage.error(result.message || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    ElMessage.error('保存失败，请重试')
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
@@ -47,6 +151,14 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
         </div>
         <div class="actions">
           <el-button @click="goBack">返回</el-button>
+          <el-button @click="exportQuestions">导出</el-button>
+          <el-button 
+            :type="saved ? 'success' : 'warning'" 
+            :loading="saving" 
+            @click="saveQuestionsToDb"
+          >
+            {{ saved ? '已保存' : '保存' }}
+          </el-button>
           <el-button type="primary" :loading="questionStore.generating" @click="regenerate">重新生成</el-button>
         </div>
       </div>
@@ -86,7 +198,12 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
 
           <div class="q-block">
             <div class="q-label">参考答案</div>
-            <div class="answer">
+            <!-- 解答题且包含代码块 -->
+            <div v-if="isShortAnswer(q) && hasCodeBlock(q.answer)" class="answer-code">
+              <pre><code>{{ q.answer }}</code></pre>
+            </div>
+            <!-- 普通答案 -->
+            <div v-else class="answer">
               <span v-if="Array.isArray(q.answer)">{{ q.answer.join(', ') }}</span>
               <span v-else>{{ q.answer }}</span>
             </div>
@@ -186,6 +303,49 @@ const courseName = computed(() => courseStore.currentCourse?.name || questionSto
 .answer {
   font-weight: 650;
   color: rgba(255, 255, 255, 0.82);
+}
+
+.answer-code {
+  margin-top: 6px;
+}
+
+.answer-code pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  overflow-x: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.answer-code code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #e8eaed;
+  white-space: pre;
+  display: block;
+  letter-spacing: 0.02em;
+}
+
+/* 代码块滚动条美化 */
+.answer-code pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.answer-code pre::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.answer-code pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.answer-code pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .explain,

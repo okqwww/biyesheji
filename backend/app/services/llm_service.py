@@ -30,7 +30,7 @@ class LLMService:
                 }
             ],
             "temperature": 0.7,
-            "max_tokens": 2000
+            "max_tokens": 8192
         }
         
         retries = 0
@@ -41,7 +41,7 @@ class LLMService:
                         settings.DEEPSEEK_API_URL,
                         headers=headers,
                         json=payload,
-                        timeout=70.0
+                        timeout=700.0
                     )
                     
                     if response.status_code == 200:

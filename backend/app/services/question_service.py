@@ -168,10 +168,55 @@ class QuestionService:
             
             # 答案
             lines.append(f"**参考答案**：")
+            
+            # 判断是否为解答题且包含代码
+            is_code_answer = (
+                question.type == "short_answer" and 
+                isinstance(question.answer, str) and
+                ("<template>" in question.answer or 
+                 "<script>" in question.answer or
+                 "def " in question.answer or
+                 "class " in question.answer or
+                 "function " in question.answer or
+                 "const " in question.answer or
+                 "import " in question.answer)
+            )
+            
             if isinstance(question.answer, list):
+                # 填空题的多个答案
                 lines.append(", ".join(question.answer))
+            elif is_code_answer:
+                # 解答题的代码答案，用代码块包裹
+                answer_text = str(question.answer)
+                
+                # 移除 LLM 可能添加的前缀
+                prefixes = ["参考答案（含代码）：", "参考答案：", "答案："]
+                for prefix in prefixes:
+                    if answer_text.startswith(prefix):
+                        answer_text = answer_text.replace(prefix, "", 1).strip()
+                        break
+                
+                # 判断代码语言
+                if "<template>" in answer_text or "<script>" in answer_text or "<style>" in answer_text:
+                    lang = "vue"
+                elif "def " in answer_text and "import " in answer_text:
+                    lang = "python"
+                elif "function " in answer_text or "const " in answer_text or "let " in answer_text:
+                    lang = "javascript"
+                elif "public class" in answer_text or "public static" in answer_text:
+                    lang = "java"
+                else:
+                    lang = ""  # 不指定语言，让 Markdown 自动检测
+                
+                # 添加代码块标记
+                lines.append("")
+                lines.append(f"```{lang}")
+                lines.append(answer_text)
+                lines.append("```")
             else:
+                # 普通答案（单选、多选题）
                 lines.append(str(question.answer))
+            
             lines.append("")
             
             # 解析

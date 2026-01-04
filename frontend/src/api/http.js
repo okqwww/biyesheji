@@ -2,7 +2,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const http = axios.create({
-  timeout: 70000,
+  timeout: 700000,
 })
 
 http.interceptors.response.use(

@@ -8,6 +8,7 @@ from app.core.logging import logger
 
 # 导入API路由
 from app.api import courses, knowledge, questions
+from app.api import agent as agent_router
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(courses.router, prefix=settings.API_PREFIX)
 app.include_router(knowledge.router, prefix=settings.API_PREFIX)
 app.include_router(questions.router, prefix=settings.API_PREFIX)
+app.include_router(agent_router.router, prefix=settings.API_PREFIX)
 
 
 # 请求计时中间件

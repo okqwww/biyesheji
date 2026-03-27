@@ -23,7 +23,15 @@ class Settings(BaseSettings):
     # 大模型API配置
     DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
     DEEPSEEK_API_URL: str = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/v1/chat/completions")
-    
+
+    # 视觉模型API配置（通义千问 Qwen-VL-Max）
+    QWEN_VL_API_KEY: Optional[str] = os.getenv("QWEN_VL_API_KEY")
+    QWEN_VL_API_URL: str = os.getenv("QWEN_VL_API_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions")
+    QWEN_VL_MODEL: str = os.getenv("QWEN_VL_MODEL", "qwen-vl-max")
+
+    # 上传文件存储目录
+    UPLOAD_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads")
+
     # 日志配置
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     

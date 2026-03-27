@@ -249,7 +249,7 @@ class QuestionService:
         }
         
         # 基础Prompt模板
-        prompt = f"""你是一位专业的高校教师，擅长出高质量的编程考试题目。
+        prompt = f"""你是一位专业的高校教师，擅长出高质量的考试题目。
 
 请根据以下要求生成{question_type.value}：
 
@@ -320,7 +320,7 @@ class QuestionService:
         elif question_type == QuestionType.SHORT_ANSWER:
             prompt += """要求：
 1. 题目紧扣指定知识点
-2. 提供完整的参考答案（含代码）
+2. 提供完整的参考答案
 3. 提供详细的评分标准（总分10分）
 4. 评分标准要具体、可操作
 
@@ -329,7 +329,7 @@ class QuestionService:
   "questions": [
     {
       "content": "题目描述",
-      "answer": "参考答案（含代码）",
+      "answer": "参考答案",
       "scoring_points": [
         "正确定义函数（2分）",
         "正确使用循环（3分）",

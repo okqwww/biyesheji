@@ -11,6 +11,11 @@ const router = createRouter({
     { path: '/courses', name: 'courses', component: CourseSelect },
     { path: '/courses/:courseId', name: 'graph', component: KnowledgeGraph, props: true },
     { path: '/result', name: 'result', component: QuestionResult },
+    // ── Agent 出题流程 ─────────────────────────────────
+    { path: '/agent/upload', name: 'agent-upload', component: () => import('../views/AgentUpload.vue') },
+    { path: '/agent/parsing', name: 'agent-parsing', component: () => import('../views/AgentParsing.vue') },
+    { path: '/agent/slots', name: 'agent-slots', component: () => import('../views/AgentSlots.vue') },
+    { path: '/agent/draft', name: 'agent-draft', component: () => import('../views/AgentDraft.vue') },
   ],
 })
 

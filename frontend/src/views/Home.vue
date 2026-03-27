@@ -1,10 +1,17 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { useAgentStore } from '../stores/agent'
 
 const router = useRouter()
+const agentStore = useAgentStore()
 
 function goStart() {
   router.push('/courses')
+}
+
+function goAgent() {
+  agentStore.reset()
+  router.push('/agent/upload')
 }
 </script>
 
@@ -19,8 +26,21 @@ function goStart() {
         </p>
 
         <div class="hero-actions">
-          <el-button type="primary" size="large" class="cta" @click="goStart">开始使用</el-button>
-          <div class="muted">桌面端优先 · 本地部署</div>
+          <el-button type="primary" size="large" class="cta" @click="goStart">
+            根据知识图谱生题
+          </el-button>
+          <el-button type="success" size="large" class="cta cta-agent" @click="goAgent">
+            根据往年题智能出题 (Agent)
+          </el-button>
+        </div>
+        <div class="mode-hint">
+          <span class="hint-item">
+            <strong>知识图谱生题</strong>：快速生成练习题，无需往年题
+          </span>
+          <span class="hint-sep">·</span>
+          <span class="hint-item">
+            <strong>往年题智能出题</strong>：上传历年真题 PDF，多 Agent 生成高质量试卷
+          </span>
         </div>
 
         <div class="features">
@@ -39,7 +59,7 @@ function goStart() {
         </div>
       </div>
 
-      <div class="footer muted">© 2024-2025 智能出题系统 · FastAPI + Neo4j + DeepSeek</div>
+      <div class="footer muted">© 2026 北京邮电大学 周奕君 智能出题系统 · FastAPI + Neo4j + DeepSeek</div>
     </div>
   </div>
 </template>
@@ -106,6 +126,28 @@ function goStart() {
   height: 42px;
   padding: 0 18px;
   border-radius: 12px;
+}
+
+.cta-agent {
+  padding: 0 22px;
+}
+
+.mode-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hint-sep {
+  opacity: 0.4;
+}
+
+.hint-item strong {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .features {

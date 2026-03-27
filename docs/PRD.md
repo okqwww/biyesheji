@@ -381,9 +381,9 @@ D. foreach i in list
 
 | 层级 | 技术选型 | 版本 | 说明 |
 |------|----------|------|------|
-| 前端框架 | Vue 3 | 3.4+ | Composition API |
+| 前端框架 | Vue 3 | 3.4+ |  |
 | UI组件库 | Element Plus | 2.4+ | 表单、按钮等组件 |
-| 图可视化 | ECharts 或 D3.js | - | 力导向图 |
+| 图可视化 |   D3.js | - | 力导向图 |
 | HTTP客户端 | Axios | 1.6+ | API请求 |
 | 构建工具 | Vite | 5.0+ | 开发服务器和打包 |
 | 后端框架 | FastAPI | 0.109+ | Python异步Web框架 |
@@ -579,8 +579,7 @@ interface GenerateResponse {
 | GET | /api/courses | 获取课程列表 |
 | GET | /api/courses/{course_id}/graph | 获取课程知识图谱 |
 | POST | /api/questions/generate | 生成题目 |
-| POST | /api/questions/save | 保存题目 |
-| PUT | /api/questions/{question_id} | 更新题目 |
+
 
 ### 6.2 接口详细设计
 

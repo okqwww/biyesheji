@@ -89,3 +89,17 @@ class ExamState(TypedDict):
 
     # Agent 4 生成进度/错误信息
     generate_progress: Optional[dict]
+
+    # Agent 1.5 知识图谱提取状态："pending" / "extracting" / "done" / "error"
+    kg_status: str
+
+    # Agent 1.5 提取进度/结果摘要
+    kg_progress: Optional[dict]
+
+    # Agent 1.5 输出：知识点节点列表
+    # 每项结构：{"id": "知识点名称", "freq": 3}
+    kg_nodes: list[dict]
+
+    # Agent 1.5 输出：知识点关系边列表
+    # 每项结构：{"source": "A", "target": "B", "relation": "RELATED_TO"}
+    kg_edges: list[dict]

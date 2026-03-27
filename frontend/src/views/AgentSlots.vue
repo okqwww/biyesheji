@@ -12,26 +12,47 @@ const store = useAgentStore()
 const starting = ref(false)
 const modLevel = ref(store.modificationLevel)
 
+// 可编辑的题槽副本（深拷贝，避免直接改 store）
+const editableSlots = ref([])
+
 const levelOptions = [
   { label: '小改', value: 'small', desc: '保留原题框架，仅微调数值或条件' },
   { label: '中改', value: 'medium', desc: '改变解题方向或应用场景，知识点相同' },
   { label: '大改', value: 'large', desc: '深度重构，考察相同知识点的全新题目' },
 ]
 
-const slots = computed(() => store.slotTemplate || [])
-
 onMounted(() => {
-  if (!store.sessionId || slots.value.length === 0) {
+  if (!store.sessionId || !store.slotTemplate?.length) {
     ElMessage.warning('请先完成 PDF 解析与分析')
     router.replace('/agent/upload')
+    return
   }
+  // 深拷贝一份用于编辑
+  editableSlots.value = JSON.parse(JSON.stringify(store.slotTemplate))
 })
+
+// ── 知识点标签编辑 ────────────────────────────────
+const newKfInputs = ref({})  // { [slot_id]: string }
+
+function addKf(slot) {
+  const val = (newKfInputs.value[slot.slot_id] || '').trim()
+  if (!val) return
+  if (!slot.knowledge_focus) slot.knowledge_focus = []
+  if (!slot.knowledge_focus.includes(val)) slot.knowledge_focus.push(val)
+  newKfInputs.value[slot.slot_id] = ''
+}
+
+function removeKf(slot, kf) {
+  slot.knowledge_focus = slot.knowledge_focus.filter((k) => k !== kf)
+}
 
 async function generate() {
   store.modificationLevel = modLevel.value
+  // 将编辑后的题槽写回 store，并传给后端覆盖 session
+  store.slotTemplate = JSON.parse(JSON.stringify(editableSlots.value))
   starting.value = true
   try {
-    await startGenerate(store.sessionId, modLevel.value)
+    await startGenerate(store.sessionId, modLevel.value, editableSlots.value)
     store.generating = true
     router.push('/agent/draft')
   } catch {
@@ -58,37 +79,64 @@ function typeColor(type) {
         <el-button text @click="$router.push('/agent/parsing')">← 返回进度页</el-button>
         <h1 class="page-title">确认题槽结构</h1>
         <p class="page-desc">
-          以下是 AI 从历年试卷中识别到的 <strong>{{ slots.length }} 个题槽</strong>，每个题槽对应试卷中固定的一道题。
-          请确认无误后，选择改动幅度并开始生成今年试卷。
+          以下是 AI 从历年试卷中识别到的 <strong>{{ editableSlots.length }} 个题槽</strong>，每个题槽对应试卷中固定的一道题。
+          可直接编辑题型、分值和知识点，确认无误后选择改动幅度并开始生成。
         </p>
       </div>
 
       <div class="slots-grid">
         <el-card
-          v-for="slot in slots"
+          v-for="slot in editableSlots"
           :key="slot.slot_id"
           class="slot-card glass"
           shadow="never"
         >
           <div class="slot-head">
             <div class="slot-type-badge" :style="{ background: typeColor(slot.type) + '22', color: typeColor(slot.type), borderColor: typeColor(slot.type) + '55' }">
-              {{ slot.type }}
+              <!-- 题型可编辑 -->
+              <el-input
+                v-model="slot.type"
+                size="small"
+                class="type-input"
+                :style="{ color: typeColor(slot.type) }"
+              />
             </div>
             <div class="slot-meta">
-              <span class="slot-points">{{ slot.points }} 分</span>
-              <span v-if="slot.typical_sub_count" class="slot-sub">约 {{ slot.typical_sub_count }} 小题</span>
+              <!-- 分值可编辑 -->
+              <el-input-number
+                v-model="slot.points"
+                :min="1"
+                :max="200"
+                size="small"
+                controls-position="right"
+                class="points-input"
+              />
+              <span class="points-unit">分</span>
             </div>
           </div>
 
-          <div class="slot-kf" v-if="slot.knowledge_focus?.length">
+          <!-- 知识点标签（可删除 + 新增） -->
+          <div class="slot-kf">
             <el-tag
               v-for="kf in slot.knowledge_focus"
               :key="kf"
               size="small"
               type="info"
               effect="plain"
+              closable
               class="kf-tag"
+              @close="removeKf(slot, kf)"
             >{{ kf }}</el-tag>
+            <div class="kf-add">
+              <el-input
+                v-model="newKfInputs[slot.slot_id]"
+                size="small"
+                placeholder="+ 添加知识点"
+                class="kf-input"
+                @keyup.enter="addKf(slot)"
+              />
+              <el-button size="small" text @click="addKf(slot)">添加</el-button>
+            </div>
           </div>
 
           <el-collapse v-if="slot.history?.length" class="history-collapse">
@@ -221,6 +269,66 @@ function typeColor(type) {
   font-size: 12px;
 }
 
+/* 题型输入框 */
+.type-input {
+  width: 120px;
+}
+
+.type-input :deep(.el-input__wrapper) {
+  background: transparent;
+  box-shadow: none;
+  padding: 0 4px;
+}
+
+.type-input :deep(.el-input__inner) {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  height: 24px;
+}
+
+/* 分值输入框 */
+.points-input {
+  width: 80px;
+}
+
+.points-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+.points-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+
+.points-unit {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 知识点新增区 */
+.kf-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.kf-input {
+  width: 120px;
+}
+
+.kf-input :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.kf-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
 .history-collapse :deep(.el-collapse) {
   border: none;
   background: transparent;
@@ -235,9 +343,15 @@ function typeColor(type) {
   height: 36px;
 }
 
+.history-collapse :deep(.el-collapse-item__wrap) {
+  background: transparent;
+  border: none;
+}
+
 .history-collapse :deep(.el-collapse-item__content) {
   background: transparent;
   padding: 12px 0 0;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .history-item {

@@ -165,26 +165,69 @@ def _build_generation_prompt(
 # JSON 解析
 # ─────────────────────────────────────────────
 
+# JSON 规范允许的转义字符（紧跟在 \ 后面的合法字符）
+_JSON_VALID_ESCAPES = set('"\\\/bfnrtu')
+
+
+def _fix_latex_escapes(text: str) -> str:
+    """
+    将 JSON 字符串中因 LaTeX 公式产生的非法转义序列（如 \\gamma、\\bar、\\frac 等）
+    修复为合法的双反斜杠，同时保留已合法的 JSON 转义（\\n、\\t、\\\\ 等）。
+
+    例：$\\gamma$ → $\\\\gamma$（json.loads 后恢复为 $\\gamma$，KaTeX 可正确渲染）
+    """
+    result: list[str] = []
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == '\\' and i + 1 < len(text):
+            next_ch = text[i + 1]
+            if next_ch in _JSON_VALID_ESCAPES:
+                # 合法 JSON 转义，原样保留（反斜杠 + 后续字符都要保留）
+                result.append(ch)
+                result.append(next_ch)
+            else:
+                # 非法转义（LaTeX 反斜杠），补成双反斜杠，后续字符也要保留
+                result.append('\\')
+                result.append('\\')
+                result.append(next_ch)
+            i += 2  # 同时跳过反斜杠和后续字符
+        else:
+            result.append(ch)
+            i += 1
+    return ''.join(result)
+
+
+def _try_parse(raw: str) -> Optional[dict]:
+    """先直接解析，失败时修复 LaTeX 反斜杠后再解析。"""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    try:
+        return json.loads(_fix_latex_escapes(raw))
+    except json.JSONDecodeError:
+        return None
+
+
 def _parse_question_response(text: str) -> Optional[dict]:
     """
     从 LLM 返回文本中鲁棒地提取题目 JSON 对象。
-    兼容 ```json ... ``` 包裹和前后有说明文字的情况。
+    兼容 ```json ... ``` 包裹、前后有说明文字、以及 LaTeX 反斜杠未转义等情况。
     """
     text = text.strip()
 
-    # 直接解析
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+    # 直接解析（含 LaTeX 修复）
+    result = _try_parse(text)
+    if result is not None:
+        return result
 
     # ```json ... ``` 包裹
     code_block = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
     if code_block:
-        try:
-            return json.loads(code_block.group(1).strip())
-        except json.JSONDecodeError:
-            pass
+        result = _try_parse(code_block.group(1).strip())
+        if result is not None:
+            return result
 
     # 找第一个 { ... } 块
     start = text.find("{")
@@ -202,10 +245,7 @@ def _parse_question_response(text: str) -> Optional[dict]:
                 break
     if end == -1:
         return None
-    try:
-        return json.loads(text[start: end + 1])
-    except json.JSONDecodeError:
-        return None
+    return _try_parse(text[start: end + 1])
 
 
 # ─────────────────────────────────────────────

@@ -16,6 +16,7 @@ const router = createRouter({
     { path: '/agent/parsing', name: 'agent-parsing', component: () => import('../views/AgentParsing.vue') },
     { path: '/agent/slots', name: 'agent-slots', component: () => import('../views/AgentSlots.vue') },
     { path: '/agent/draft', name: 'agent-draft', component: () => import('../views/AgentDraft.vue') },
+    { path: '/agent/graph', name: 'agent-graph', component: () => import('../views/AgentGraph.vue') },
   ],
 })
 

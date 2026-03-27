@@ -46,12 +46,12 @@ export function getAnalyzed(sessionId) {
  * 触发 Agent 4 并行题目生成
  * @param {string} sessionId
  * @param {string} level  "small" | "medium" | "large"
+ * @param {Array|null} slotTemplate  教师编辑后的题槽列表，null 则使用 session 中已有的
  */
-export function startGenerate(sessionId, level = 'medium') {
-  return http.post('/api/agent/generate', {
-    session_id: sessionId,
-    modification_level: level,
-  })
+export function startGenerate(sessionId, level = 'medium', slotTemplate = null) {
+  const body = { session_id: sessionId, modification_level: level }
+  if (slotTemplate !== null) body.slot_template = slotTemplate
+  return http.post('/api/agent/generate', body)
 }
 
 /**
@@ -74,4 +74,20 @@ export function regenerate(sessionId, slotId, message) {
     slot_id: slotId,
     message,
   })
+}
+
+/**
+ * 触发 Agent 1.5 知识图谱提取
+ * @param {string} sessionId
+ */
+export function startKg(sessionId) {
+  return http.post('/api/agent/kg/start', { session_id: sessionId })
+}
+
+/**
+ * 轮询 Agent 1.5 知识图谱提取结果
+ * @param {string} sessionId
+ */
+export function getKg(sessionId) {
+  return http.get('/api/agent/kg/result', { params: { session_id: sessionId } })
 }

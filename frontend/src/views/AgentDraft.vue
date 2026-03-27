@@ -163,9 +163,14 @@ function copyAll() {
             共 {{ questions.length }} 道题 · 改动幅度：{{ levelLabel(store.modificationLevel) }}
           </el-tag>
         </div>
-        <el-button v-if="!loading && questions.length" type="default" @click="copyAll">
-          复制全卷文本
-        </el-button>
+        <div v-if="!loading && questions.length" class="toolbar-actions">
+          <el-button type="default" @click="$router.push('/agent/graph')">
+            查看知识图谱
+          </el-button>
+          <el-button type="default" @click="copyAll">
+            复制全卷文本
+          </el-button>
+        </div>
       </div>
 
       <!-- 加载状态 -->
@@ -300,6 +305,12 @@ function copyAll() {
   justify-content: space-between;
   margin-bottom: 24px;
   gap: 16px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .toolbar-left {

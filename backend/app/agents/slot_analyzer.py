@@ -143,26 +143,62 @@ def _format_exams_for_prompt(parsed_exams: list[dict]) -> tuple[str, str]:
     return exams_text, course_name
 
 
+# JSON 规范允许的转义字符
+_JSON_VALID_ESCAPES = set('"\\\/bfnrtu')
+
+
+def _fix_latex_escapes(text: str) -> str:
+    """将 LaTeX 反斜杠（非法 JSON 转义）修复为双反斜杠，保留合法 JSON 转义。"""
+    result: list[str] = []
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == '\\' and i + 1 < len(text):
+            next_ch = text[i + 1]
+            if next_ch in _JSON_VALID_ESCAPES:
+                result.append(ch)
+                result.append(next_ch)
+            else:
+                result.append('\\')
+                result.append('\\')
+                result.append(next_ch)
+            i += 2
+        else:
+            result.append(ch)
+            i += 1
+    return ''.join(result)
+
+
+def _try_parse(raw: str) -> Optional[dict]:
+    """先直接解析，失败时修复 LaTeX 反斜杠后再解析。"""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    try:
+        return json.loads(_fix_latex_escapes(raw))
+    except json.JSONDecodeError:
+        return None
+
+
 def _parse_slot_response(text: str) -> Optional[dict]:
     """
     从 LLM 返回文本中提取第一个有效 JSON 对象。
-    兼容模型在 JSON 前后附加说明文字的情况，以及 ```json ... ``` 包裹。
+    兼容模型在 JSON 前后附加说明文字、```json ... ``` 包裹以及 LaTeX 反斜杠未转义等情况。
     """
     text = text.strip()
 
-    # 先尝试整体解析
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+    # 先尝试整体解析（含 LaTeX 修复）
+    result = _try_parse(text)
+    if result is not None:
+        return result
 
     # 尝试 ```json ... ``` 包裹
     code_block = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
     if code_block:
-        try:
-            return json.loads(code_block.group(1).strip())
-        except json.JSONDecodeError:
-            pass
+        result = _try_parse(code_block.group(1).strip())
+        if result is not None:
+            return result
 
     # 尝试找第一个 { ... } 块
     start = text.find("{")
@@ -180,10 +216,7 @@ def _parse_slot_response(text: str) -> Optional[dict]:
                 break
     if end == -1:
         return None
-    try:
-        return json.loads(text[start: end + 1])
-    except json.JSONDecodeError:
-        return None
+    return _try_parse(text[start: end + 1])
 
 
 # ─────────────────────────────────────────────

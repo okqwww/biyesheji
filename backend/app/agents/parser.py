@@ -109,23 +109,23 @@ def detect_is_answer_sheet(filename: str, first_page_text: Optional[str] = None)
 
 def _extract_year_from_filename(filename: str) -> Optional[int]:
     """从文件名中提取年份（四位数字）。"""
-    match = re.search(r"(20\d{2})", filename)
+    match = re.search(r"(\d{4})", filename)
     return int(match.group(1)) if match else None
 
 
 def _extract_course_name(filename: str) -> Optional[str]:
     """
     尝试从文件名提取课程名称。
-    文件名格式通常为：2021-课程名-期末.pdf 或 课程名2022春.pdf
+    文件名格式通常为：2021-课程名-期末.pdf 或 课程名2022春.pdf 或 1617期末带答案.pdf
     """
     # 去掉扩展名
     name = os.path.splitext(filename)[0]
     # 去掉常见标识词
-    for kw in ["期末", "期中", "考试", "试题", "答案", "解析", "春", "秋", "Final", "Midterm"]:
+    for kw in ["期末", "期中", "考试", "试题", "答案", "解析", "春", "秋", "带", "Final", "Midterm", "副本"]:
         name = name.replace(kw, "")
-    # 去掉年份
-    name = re.sub(r"20\d{2}", "", name)
-    # 去掉连字符和空格
+    # 去掉四位数字（年份/学年）
+    name = re.sub(r"\d{4}", "", name)
+    # 去掉连字符、下划线和多余空格
     name = re.sub(r"[-_\s]+", " ", name).strip()
     return name if name else None
 
@@ -315,7 +315,7 @@ async def agent1_parse_pdfs(state: ExamState) -> dict:
     """
     LangGraph 节点入口函数。
 
-    遍历 state["pdf_paths"]，并发解析所有 PDF，将结果写入
+    并发解析所有 PDF（每个 PDF 内部页面也并发），将结果写入
     state["parsed_exams"]，并更新 parse_status 为 "done" 或 "error"。
     """
     pdf_paths: list[str] = state.get("pdf_paths", [])
@@ -323,16 +323,25 @@ async def agent1_parse_pdfs(state: ExamState) -> dict:
         logger.warning("agent1_parse_pdfs: pdf_paths 为空，跳过。")
         return {"parsed_exams": [], "parse_status": "done"}
 
-    parsed_exams: list[dict] = []
-    errors: list[str] = []
+    logger.info("并发解析 %d 份 PDF...", len(pdf_paths))
 
-    for pdf_path in pdf_paths:
+    async def _safe_parse(pdf_path: str):
+        """解析单份 PDF，失败返回 Exception 而非抛出。"""
         try:
-            result = await parse_single_pdf(pdf_path)
-            parsed_exams.append(result)
+            return await parse_single_pdf(pdf_path)
         except Exception as exc:
             logger.exception("解析 %s 时出错: %s", pdf_path, exc)
-            errors.append(f"{os.path.basename(pdf_path)}: {str(exc)}")
+            return exc
+
+    results = await asyncio.gather(*[_safe_parse(p) for p in pdf_paths])
+
+    parsed_exams: list[dict] = []
+    errors: list[str] = []
+    for pdf_path, result in zip(pdf_paths, results):
+        if isinstance(result, Exception):
+            errors.append(f"{os.path.basename(pdf_path)}: {str(result)}")
+        else:
+            parsed_exams.append(result)
 
     status = "done" if not errors else "error"
     update: dict = {

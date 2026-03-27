@@ -10,6 +10,8 @@ agent.py — 多 Agent 出题系统 FastAPI 路由
   POST /api/agent/generate         触发 Agent 4 并行题目生成
   GET  /api/agent/generate/result  轮询生成结果
   POST /api/agent/regenerate       单题反馈重新生成
+  POST /api/agent/kg/start         触发 Agent 1.5 知识图谱提取
+  GET  /api/agent/kg/result        轮询知识图谱提取结果
 """
 
 import asyncio
@@ -24,6 +26,7 @@ from pydantic import BaseModel
 from app.agents.parser import agent1_parse_pdfs
 from app.agents.slot_analyzer import agent2_analyze_slots
 from app.agents.question_generator import agent4_generate_questions, generate_one_question, _build_other_slots_summary
+from app.agents.kg_extractor import agent15_extract_kg
 from app.agents.state import ExamState
 from app.core.config import settings
 
@@ -91,6 +94,18 @@ class RegenerateRequest(BaseModel):
 class RegenerateResponse(BaseModel):
     slot_id: int
     question: dict
+
+
+class KgRequest(BaseModel):
+    session_id: str
+
+
+class KgStatusResponse(BaseModel):
+    session_id: str
+    status: str          # "pending" / "extracting" / "done" / "error"
+    progress: Optional[dict] = None
+    kg_nodes: Optional[list[dict]] = None
+    kg_edges: Optional[list[dict]] = None
 
 
 # ─────────────────────────────────────────────
@@ -167,6 +182,25 @@ async def _run_generate(session_id: str) -> None:
         sessions[session_id]["generate_progress"] = {"error": str(exc)}
 
 
+async def _run_kg(session_id: str) -> None:
+    """后台任务：执行 Agent 1.5 知识图谱提取，将结果写回 sessions。"""
+    session = sessions.get(session_id)
+    if not session:
+        logger.error("后台任务：找不到会话 %s", session_id)
+        return
+
+    sessions[session_id]["kg_status"] = "extracting"
+    sessions[session_id]["kg_progress"] = None
+
+    try:
+        update = await agent15_extract_kg(session)
+        sessions[session_id].update(update)
+    except Exception as exc:
+        logger.exception("后台知识图谱提取会话 %s 时出错: %s", session_id, exc)
+        sessions[session_id]["kg_status"] = "error"
+        sessions[session_id]["kg_progress"] = {"error": str(exc)}
+
+
 # ─────────────────────────────────────────────
 # 路由
 # ─────────────────────────────────────────────
@@ -223,6 +257,10 @@ async def upload_pdfs(files: list[UploadFile] = File(...)):
         analyze_progress=None,
         generate_status="pending",
         generate_progress=None,
+        kg_status="pending",
+        kg_progress=None,
+        kg_nodes=[],
+        kg_edges=[],
     )
 
     return UploadResponse(
@@ -435,3 +473,55 @@ async def regenerate_question(request: RegenerateRequest):
     sessions[request.session_id]["generated_questions"] = updated_questions
 
     return RegenerateResponse(slot_id=request.slot_id, question=new_question)
+
+
+@router.post("/kg/start")
+async def start_kg(request: KgRequest, background_tasks: BackgroundTasks):
+    """
+    触发 Agent 1.5 从已解析的试卷中提取课程知识图谱。
+
+    - 要求 parse_status 已为 "done"（Agent 1 必须先完成）
+    - 提取结果自动写入 Neo4j（失败时仍返回内存中的图谱数据）
+    - 客户端通过 GET /api/agent/kg/result 轮询进度
+    """
+    session = _get_session_or_404(request.session_id)
+
+    if session.get("parse_status") != "done":
+        raise HTTPException(
+            status_code=400,
+            detail="请先完成 PDF 解析（parse_status 须为 done）再触发知识图谱提取。",
+        )
+
+    current_status = session.get("kg_status", "pending")
+    if current_status == "extracting":
+        return {"message": "知识图谱提取正在进行中，请勿重复提交。", "session_id": request.session_id}
+
+    background_tasks.add_task(_run_kg, request.session_id)
+    return {
+        "message": "知识图谱提取任务已启动，请通过 /api/agent/kg/result 轮询结果。",
+        "session_id": request.session_id,
+    }
+
+
+@router.get("/kg/result", response_model=KgStatusResponse)
+async def get_kg_result(session_id: str):
+    """
+    查询 Agent 1.5 知识图谱提取进度与结果。
+
+    返回字段：
+      - status: "pending" / "extracting" / "done" / "error"
+      - progress: 提取完成后的元信息（课程名、节点数、边数、是否写入 Neo4j）
+      - kg_nodes: 提取完成后返回节点列表，提取中时为 null
+      - kg_edges: 提取完成后返回边列表，提取中时为 null
+    """
+    session = _get_session_or_404(session_id)
+    status = session.get("kg_status", "pending")
+    is_done = status == "done"
+
+    return KgStatusResponse(
+        session_id=session_id,
+        status=status,
+        progress=session.get("kg_progress"),
+        kg_nodes=session.get("kg_nodes") if is_done else None,
+        kg_edges=session.get("kg_edges") if is_done else None,
+    )

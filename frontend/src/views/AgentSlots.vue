@@ -140,13 +140,13 @@ function typeColor(type) {
           </div>
 
           <el-collapse v-if="slot.history?.length" class="history-collapse">
-            <el-collapse-item :title="`历年题目（${slot.history.length} 年）`">
+            <el-collapse-item :title="`历年题目（${slot.history.length} 题）`">
               <div
                 v-for="h in slot.history"
                 :key="h.year"
                 class="history-item"
               >
-                <div class="history-year">{{ h.year }} 年</div>
+                <div class="history-year">{{ h.year && h.year !== '未知年份' ? h.year + ' 年' : '未知年' }}</div>
                 <LatexRenderer :content="h.content" class="history-content" />
               </div>
             </el-collapse-item>

@@ -148,6 +148,13 @@ def _build_generation_prompt(
 4. 参考答案要包含完整的解题步骤
 5. 评分标准要列出每个得分点及对应分值
 {feedback_section}
+【输出前自检（重要）】
+在输出 JSON 之前，先在脑中默默检查以下四点，若发现问题直接修正后再输出，不要在 JSON 里解释或提及自检过程：
+① 题目内部数据是否自洽？（如速率、带宽、功率、频率等数值之间的计算是否无矛盾）
+② 参考答案与题目给定条件是否完全对应？（不能引用题目中未给出的量）
+③ 题目设定的物理/工程情形是否符合现实常识？（如信噪比范围合理、参数量级正确）
+④ 若涉及多个小问，各小问之间是否逻辑一致、结论不矛盾？
+
 请严格按照以下 JSON 格式输出，不要有任何额外说明文字：
 {{
   "slot_id": {slot_id},
@@ -276,7 +283,9 @@ async def generate_one_question(
     )
 
     logger.info("开始生成题槽 %s（%s，%s 分）...", slot_id, slot.get("type"), slot.get("points"))
-    response = await llm_service.call_deepseek_api(prompt, max_retries=2)
+    response = await llm_service.call_deepseek_api(
+        prompt, max_retries=2, tag=f"Agent4/generate_slot_{slot_id}"
+    )
 
     if not response:
         logger.error("题槽 %s：DeepSeek API 返回空响应", slot_id)
@@ -308,12 +317,12 @@ async def generate_one_question(
 
     result = _parse_question_response(raw_text)
     if not result:
-        logger.error("题槽 %s：无法从响应中提取 JSON，预览：%s", slot_id, raw_text[:300])
+        logger.error("题槽 %s：无法从响应中提取 JSON，预览：%s", slot_id, raw_text)
         return {
             "slot_id": slot_id,
             "type": slot.get("type"),
             "points": slot.get("points"),
-            "content": raw_text[:500],  # 至少保留原始文本，供人工检查
+            "content": raw_text,  # 至少保留原始文本，供人工检查
             "answer": "",
             "scoring_criteria": [],
             "reused_figure": None,

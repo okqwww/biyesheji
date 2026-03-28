@@ -3,14 +3,18 @@ import json
 import asyncio
 from typing import Dict, List, Any, Optional
 from app.core.config import settings
-from app.core.logging import logger
+from app.core.logging import logger, log_llm_call
 
 
 class LLMService:
     """大模型服务"""
     
     @staticmethod
-    async def call_deepseek_api(prompt: str, max_retries: int = 2) -> Optional[Dict[str, Any]]:
+    async def call_deepseek_api(
+        prompt: str,
+        max_retries: int = 2,
+        tag: str = "",
+    ) -> Optional[Dict[str, Any]]:
         """调用DeepSeek API生成内容"""
         if not settings.DEEPSEEK_API_KEY:
             logger.error("未配置DeepSeek API密钥")
@@ -22,7 +26,7 @@ class LLMService:
         }
         
         payload = {
-            "model": "deepseek-chat",  # 或根据DeepSeek的要求使用合适的模型ID
+            "model": "deepseek-chat",
             "messages": [
                 {
                     "role": "user",
@@ -45,19 +49,46 @@ class LLMService:
                     )
                     
                     if response.status_code == 200:
-                        return response.json()
+                        data = response.json()
+                        raw_text = ""
+                        try:
+                            raw_text = data["choices"][0]["message"]["content"]
+                        except (KeyError, IndexError):
+                            pass
+                        log_llm_call(
+                            model="deepseek-chat",
+                            prompt=prompt,
+                            response=raw_text,
+                            tag=tag,
+                        )
+                        return data
                     else:
-                        logger.error(f"DeepSeek API调用失败: {response.status_code} - {response.text}")
+                        err_msg = f"HTTP {response.status_code}: {response.text}"
+                        logger.error("DeepSeek API调用失败: %s", err_msg)
+                        log_llm_call(
+                            model="deepseek-chat",
+                            prompt=prompt,
+                            response="",
+                            tag=tag,
+                            error=err_msg,
+                        )
                         
             except Exception as e:
                 logger.error(f"DeepSeek API调用异常: {str(e)}")
-                logger.exception(e)  # 记录完整异常堆栈
+                logger.exception(e)
+                log_llm_call(
+                    model="deepseek-chat",
+                    prompt=prompt,
+                    response="",
+                    tag=tag,
+                    error=str(e),
+                )
             
             retries += 1
             if retries <= max_retries:
                 wait_time = 2 ** retries
                 logger.info(f"第{retries}次重试，等待{wait_time}秒...")
-                await asyncio.sleep(wait_time)  # 指数退避
+                await asyncio.sleep(wait_time)
         
         return None
     

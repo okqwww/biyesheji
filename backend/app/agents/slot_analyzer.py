@@ -75,40 +75,28 @@ def _format_exams_for_prompt(parsed_exams: list[dict]) -> tuple[str, str]:
     """
     将所有试卷格式化为 LLM 可读的纯文本上下文。
 
+    所有文件（无论是否含答案）均纳入，因为题目与答案同页是常见情况，
+    答案内容对 Agent 2 理解题型结构和 Agent 4 生成参考答案都有价值。
+
     Returns:
         (exams_text, course_name): 格式化的试卷文本和推断出的课程名。
     """
     parts: list[str] = []
     course_name = "未知课程"
 
-    # 只取试题卷（非答案卷），优先用非答案卷的课程名
-    question_exams = [e for e in parsed_exams if not e.get("is_answer_sheet", False)]
-    answer_exams = {e.get("year"): e for e in parsed_exams if e.get("is_answer_sheet", False)}
-
-    if not question_exams:
-        question_exams = parsed_exams  # 没有单独区分时全部使用
-
-    # 推断课程名
-    for exam in question_exams:
+    # 推断课程名（取第一个非空值）
+    for exam in parsed_exams:
         if exam.get("course_name"):
             course_name = exam["course_name"]
             break
 
-    for exam in question_exams:
+    for exam in parsed_exams:
         year = exam.get("year") or "未知年份"
         filename = exam.get("filename", "")
         questions = exam.get("raw_questions", [])
 
-        # 尝试从对应答案卷补充答案
-        answer_map: dict[str, dict] = {}
-        answer_exam = answer_exams.get(exam.get("year"))
-        if answer_exam:
-            for aq in answer_exam.get("raw_questions", []):
-                num = str(aq.get("number", "")).strip()
-                if num:
-                    answer_map[num] = aq
-
-        year_text = f"[{year}年]（文件：{filename}）\n"
+        year_label = f"{year}年" if isinstance(year, int) else str(year)
+        year_text = f"[{year_label}]（文件：{filename}）\n"
         for q in questions:
             num = str(q.get("number", "")).strip()
             q_type = q.get("type") or "未知题型"
@@ -120,13 +108,8 @@ def _format_exams_for_prompt(parsed_exams: list[dict]) -> tuple[str, str]:
             if figs:
                 fig_str = "\n  [图示：" + "；".join(figs) + "]"
 
-            # 从题目本身或答案卷获取答案
             answer = q.get("answer")
             scoring = q.get("scoring_criteria")
-            if not answer and num in answer_map:
-                answer = answer_map[num].get("answer")
-            if not scoring and num in answer_map:
-                scoring = answer_map[num].get("scoring_criteria")
 
             answer_str = ""
             if answer:
@@ -252,7 +235,7 @@ async def agent2_analyze_slots(state: ExamState) -> dict:
 
     # 3. 调用 DeepSeek
     logger.info("调用 DeepSeek API 分析题槽结构...")
-    response = await llm_service.call_deepseek_api(prompt, max_retries=2)
+    response = await llm_service.call_deepseek_api(prompt, max_retries=2, tag="Agent2/slot_analyze")
 
     if not response:
         logger.error("DeepSeek API 返回空响应")
@@ -278,13 +261,13 @@ async def agent2_analyze_slots(state: ExamState) -> dict:
     # 5. 解析 JSON
     result_json = _parse_slot_response(raw_text)
     if not result_json:
-        logger.error("无法从 DeepSeek 响应中提取 JSON，原始内容前 500 字符：%s", raw_text[:500])
+        logger.error("无法从 DeepSeek 响应中提取 JSON，原始内容前 500 字符：%s", raw_text)
         return {
             "slot_template": [],
             "analyze_status": "error",
             "analyze_progress": {
                 "error": "无法解析 LLM 返回的 JSON",
-                "raw_preview": raw_text[:300],
+                "raw_preview": raw_text,
             },
         }
 

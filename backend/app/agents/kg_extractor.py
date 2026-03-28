@@ -16,6 +16,7 @@ from typing import Optional
 import httpx
 
 from app.core.config import settings
+from app.core.logging import log_llm_call
 from app.db.neo4j import neo4j
 
 logger = logging.getLogger(__name__)
@@ -153,7 +154,14 @@ async def _call_deepseek(prompt: str) -> str:
         resp = await client.post(settings.DEEPSEEK_API_URL, json=payload, headers=headers)
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        raw_text = data["choices"][0]["message"]["content"]
+    log_llm_call(
+        model="deepseek-chat",
+        prompt=prompt,
+        response=raw_text,
+        tag="Agent1.5/kg_extract",
+    )
+    return raw_text
 
 
 def _write_to_neo4j(session_id: str, course_name: str, nodes: list[dict], edges: list[dict]) -> None:

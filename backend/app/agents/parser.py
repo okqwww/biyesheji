@@ -157,7 +157,7 @@ async def recognize_page(
     # 尝试从返回文本中提取 JSON
     page_data = _parse_json_from_text(raw_text)
     if page_data is None:
-        logger.warning("第 %d 页 JSON 解析失败，返回空结果。原始内容: %s", page_num, raw_text[:300])
+        logger.warning("第 %d 页 JSON 解析失败，返回空结果。原始内容: %s", page_num, raw_text)
         page_data = {
             "page_questions": [],
             "section_title": None,
@@ -166,23 +166,70 @@ async def recognize_page(
     return page_data
 
 
+_JSON_VALID_ESCAPES = set('"\\\/bfnrtu')
+
+
+def _fix_latex_escapes(text: str) -> str:
+    """将 LaTeX 单反斜杠（非法 JSON 转义）修复为双反斜杠，保留合法 JSON 转义。"""
+    result: list[str] = []
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if ch == '\\' and i + 1 < len(text):
+            next_ch = text[i + 1]
+            if next_ch in _JSON_VALID_ESCAPES:
+                result.append(ch)
+                result.append(next_ch)
+            else:
+                result.append('\\')
+                result.append('\\')
+                result.append(next_ch)
+            i += 2
+        else:
+            result.append(ch)
+            i += 1
+    return ''.join(result)
+
+
+def _try_parse(raw: str) -> Optional[dict]:
+    """先直接解析，失败时修复 LaTeX 反斜杠后再解析。"""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    try:
+        return json.loads(_fix_latex_escapes(raw))
+    except json.JSONDecodeError:
+        return None
+
+
 def _parse_json_from_text(text: str) -> Optional[dict]:
     """
     从模型输出的文本中提取第一个有效 JSON 对象。
-    模型有时会在 JSON 前后附加说明文字。
+    兼容以下情况：
+      1. 纯 JSON 文本
+      2. ```json ... ``` 代码块包裹
+      3. 其他前缀/后缀文字 + { ... } 括号计数兜底
+    每种路径都先尝试直接解析，失败再用 _fix_latex_escapes 修复单反斜杠后重试。
     """
-    # 先尝试直接解析
     text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
 
-    # 尝试找到第一个 { ... } 块
+    # 1. 直接解析（含 LaTeX 修复兜底）
+    result = _try_parse(text)
+    if result is not None:
+        return result
+
+    # 2. 提取 ```json ... ``` 代码块
+    code_block = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if code_block:
+        result = _try_parse(code_block.group(1).strip())
+        if result is not None:
+            return result
+
+    # 3. 括号计数兜底（处理无代码块的边缘情况）
     start = text.find("{")
     if start == -1:
         return None
-    # 找到匹配的最后一个 }
     depth = 0
     end = -1
     for i, ch in enumerate(text[start:], start=start):
@@ -195,10 +242,7 @@ def _parse_json_from_text(text: str) -> Optional[dict]:
                 break
     if end == -1:
         return None
-    try:
-        return json.loads(text[start : end + 1])
-    except json.JSONDecodeError:
-        return None
+    return _try_parse(text[start : end + 1])
 
 
 def _merge_pages(page_results: list[dict]) -> list[dict]:
@@ -283,30 +327,19 @@ async def parse_single_pdf(
     tasks = [recognize_with_sem(i, img) for i, img in enumerate(images)]
     page_results: list[dict] = await asyncio.gather(*tasks)
 
-    # 从首页文字判断是否答案卷
-    first_page_text = ""
-    if page_results and page_results[0].get("page_questions"):
-        first_page_text = page_results[0]["page_questions"][0].get("content", "")
-    is_answer = detect_is_answer_sheet(filename, first_page_text)
-
     # 合并多页
     raw_questions = _merge_pages(page_results)
 
     year = _extract_year_from_filename(filename)
     course = _extract_course_name(filename)
 
-    logger.info(
-        "PDF %s 解析完成：%d 道题，is_answer=%s",
-        filename,
-        len(raw_questions),
-        is_answer,
-    )
+    logger.info("PDF %s 解析完成：%d 道题", filename, len(raw_questions))
 
     return {
         "filename": filename,
         "year": year,
         "course_name": course,
-        "is_answer_sheet": is_answer,
+        "is_answer_sheet": False,
         "raw_questions": raw_questions,
     }
 

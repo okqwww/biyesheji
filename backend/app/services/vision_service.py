@@ -1,13 +1,15 @@
 """
 vision_service.py
-封装 Qwen-VL-Max 视觉模型的异步 HTTP 调用。
+封装视觉模型的异步调用（通过 NewAPI 中台，使用 OpenAI SDK）。
 """
 
 import base64
 import logging
-import httpx
+
+from openai import AsyncOpenAI
 
 from app.core.config import settings
+from app.core.logging import log_llm_call
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +19,19 @@ def _encode_image(image_bytes: bytes) -> str:
     return base64.b64encode(image_bytes).decode("utf-8")
 
 
+def _make_client() -> AsyncOpenAI:
+    """创建 AsyncOpenAI 客户端，指向 NewAPI 中台。"""
+    if not settings.QWEN_VL_API_KEY:
+        raise RuntimeError("QWEN_VL_API_KEY 未配置，请在 .env 文件中设置。")
+    return AsyncOpenAI(
+        api_key=settings.QWEN_VL_API_KEY,
+        base_url=settings.QWEN_VL_API_URL,
+    )
+
+
 async def call_vision_model(image_bytes: bytes, prompt: str) -> str:
     """
-    将一张图片和文本提示发送给 Qwen-VL-Max，返回模型的文本输出。
+    将一张图片和文本提示发送给视觉模型，返回模型的文本输出。
 
     Args:
         image_bytes: PNG/JPEG 格式的图片字节数据。
@@ -29,60 +41,50 @@ async def call_vision_model(image_bytes: bytes, prompt: str) -> str:
         模型返回的文本字符串。
 
     Raises:
-        RuntimeError: API Key 未配置或 HTTP 请求失败时抛出。
+        RuntimeError: API Key 未配置或调用失败时抛出。
     """
-    if not settings.QWEN_VL_API_KEY:
-        raise RuntimeError("QWEN_VL_API_KEY 未配置，请在 .env 文件中设置。")
-
     b64_image = _encode_image(image_bytes)
+    client = _make_client()
 
-    payload = {
-        "model": settings.QWEN_VL_MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{b64_image}"
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt,
-                    },
-                ],
-            }
-        ],
-    }
-
-    headers = {
-        "Authorization": f"Bearer {settings.QWEN_VL_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        response = await client.post(
-            settings.QWEN_VL_API_URL,
-            json=payload,
-            headers=headers,
-        )
-
-    if response.status_code != 200:
-        logger.error(
-            "Qwen-VL-Max API 错误: status=%d, body=%s",
-            response.status_code,
-            response.text[:500],
-        )
-        raise RuntimeError(
-            f"Qwen-VL-Max API 返回错误 {response.status_code}: {response.text[:200]}"
-        )
-
-    data = response.json()
     try:
-        content = data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError) as exc:
-        raise RuntimeError(f"解析 Qwen-VL-Max 响应失败: {data}") from exc
+        response = await client.chat.completions.create(
+            model=settings.QWEN_VL_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{b64_image}"
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt,
+                        },
+                    ],
+                }
+            ],
+            max_tokens=8192,
+        )
+    except Exception as exc:
+        err_msg = str(exc)
+        logger.error("视觉模型 API 调用失败: %s", err_msg)
+        log_llm_call(
+            model=settings.QWEN_VL_MODEL,
+            prompt=prompt,
+            response="",
+            tag="Agent1/vision_parse",
+            error=err_msg,
+        )
+        raise RuntimeError(f"视觉模型 API 调用失败: {err_msg}") from exc
 
+    content = response.choices[0].message.content or ""
+    log_llm_call(
+        model=settings.QWEN_VL_MODEL,
+        prompt=prompt,
+        response=content,
+        tag="Agent1/vision_parse",
+    )
     return content

@@ -9,17 +9,12 @@ import LatexRenderer from '../components/LatexRenderer.vue'
 const router = useRouter()
 const store = useAgentStore()
 
-// ── 轮询状态 ──────────────────────────────────────────
 const loading = ref(true)
 const percentage = ref(10)
 const statusText = ref('正在并行生成各题槽的题目...')
 let timer = null
 
-// ── 每道题的 UI 状态 ──────────────────────────────────
-// { [slotId]: { expanded: bool, showAnswer: bool, satisfied: bool|null, feedback: string, regenerating: bool } }
 const cardState = ref({})
-
-// ── 展示的题目列表 ─────────────────────────────────────
 const questions = ref([])
 
 onMounted(() => {
@@ -28,7 +23,6 @@ onMounted(() => {
     router.replace('/agent/upload')
     return
   }
-  // 如果已有结果（从题槽页返回再进入）直接展示
   if (store.generatedQuestions.length > 0) {
     questions.value = [...store.generatedQuestions]
     initCardStates()
@@ -70,7 +64,7 @@ function startPolling() {
         ElMessage.error(prog.error || '题目生成失败')
       }
     } catch {
-      // http.js 已弹出错误
+      // http.js already shows error
     }
   }, 3000)
 }
@@ -91,13 +85,7 @@ function initCardStates() {
 
 function getState(slotId) {
   if (!cardState.value[slotId]) {
-    cardState.value[slotId] = {
-      expanded: false,
-      showAnswer: false,
-      satisfied: null,
-      feedback: '',
-      regenerating: false,
-    }
+    cardState.value[slotId] = { expanded: false, showAnswer: false, satisfied: null, feedback: '', regenerating: false }
   }
   return cardState.value[slotId]
 }
@@ -112,7 +100,6 @@ async function doRegenerate(q) {
   try {
     const res = await regenerate(store.sessionId, q.slot_id, s.feedback)
     const newQ = res.question
-    // 替换本地列表
     const idx = questions.value.findIndex((x) => x.slot_id === q.slot_id)
     if (idx !== -1) questions.value.splice(idx, 1, newQ)
     store.replaceQuestion(q.slot_id, newQ)
@@ -121,7 +108,7 @@ async function doRegenerate(q) {
     s.expanded = false
     ElMessage.success('题目已重新生成')
   } catch {
-    // http.js 已弹出错误
+    // http.js already shows error
   } finally {
     s.regenerating = false
   }
@@ -154,84 +141,108 @@ function copyAll() {
 <template>
   <div class="page">
     <div class="container">
-      <!-- 顶部工具栏 -->
-      <div class="toolbar">
+      <!-- Toolbar -->
+      <div class="toolbar animate-fade-in-up">
         <div class="toolbar-left">
-          <el-button text @click="$router.push('/agent/slots')">← 返回题槽页</el-button>
-          <h1 class="page-title">试卷草稿</h1>
-          <el-tag v-if="!loading" type="success" effect="plain">
-            共 {{ questions.length }} 道题 · 改动幅度：{{ levelLabel(store.modificationLevel) }}
-          </el-tag>
+          <button class="back-btn" @click="$router.push('/agent/slots')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            返回
+          </button>
+          <div>
+            <h1 class="page-title">试卷草稿</h1>
+            <p class="page-subtitle" v-if="!loading">
+              共 {{ questions.length }} 道题 · {{ levelLabel(store.modificationLevel) }}
+            </p>
+          </div>
         </div>
+
         <div v-if="!loading && questions.length" class="toolbar-actions">
-          <el-button type="default" @click="$router.push('/agent/graph')">
+          <button class="action-btn" @click="$router.push('/agent/graph')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="4" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="20" cy="6" r="2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="4" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="20" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
             查看知识图谱
-          </el-button>
-          <el-button type="default" @click="copyAll">
-            复制全卷文本
-          </el-button>
+          </button>
+          <button class="action-btn" @click="copyAll">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+            复制全卷
+          </button>
         </div>
       </div>
 
-      <!-- 加载状态 -->
-      <div v-if="loading" class="loading-card glass">
+      <!-- Loading State -->
+      <div v-if="loading" class="loading-card animate-fade-in-up">
+        <div class="loading-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="spin-svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" stroke-dasharray="40 20" stroke-linecap="round"/>
+          </svg>
+        </div>
         <h2 class="loading-title">Agent 4 正在并行出题中</h2>
         <p class="loading-desc">{{ statusText }}</p>
-        <el-progress
-          :percentage="percentage"
-          :stroke-width="10"
-          striped
-          striped-flow
-          class="loading-progress"
-        />
+
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: `${percentage}%` }"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-pct">{{ percentage }}%</span>
+        </div>
+
         <p class="loading-hint">每道题独立调用 LLM，多题并行生成，请耐心等候...</p>
       </div>
 
-      <!-- 题目列表 -->
+      <!-- Question List -->
       <div v-else class="questions-list">
         <div
           v-for="(q, idx) in questions"
           :key="q.slot_id"
-          class="q-card glass"
+          class="q-card animate-fade-in-up"
+          :style="{ animationDelay: `${idx * 50}ms` }"
         >
-          <!-- 卡片头部 -->
-          <div class="q-head">
+          <!-- Card Header -->
+          <div class="q-header">
             <div class="q-num">{{ idx + 1 }}</div>
-            <div class="q-info">
+            <div class="q-meta">
               <span class="q-type">{{ q.type }}</span>
               <span class="q-points">{{ q.points }} 分</span>
             </div>
-            <div class="q-actions-head">
-              <el-tag
+            <div class="q-status">
+              <span
                 v-if="getState(q.slot_id).satisfied === true"
-                type="success"
-                size="small"
-                effect="plain"
-              >已确认</el-tag>
-              <el-tag
+                class="status-badge status-badge--success"
+              >已确认</span>
+              <span
                 v-else-if="getState(q.slot_id).satisfied === false"
-                type="warning"
-                size="small"
-                effect="plain"
-              >待修改</el-tag>
+                class="status-badge status-badge--warning"
+              >待修改</span>
             </div>
           </div>
 
-          <!-- 题目内容 -->
-          <div class="q-content">
+          <!-- Question Content -->
+          <div class="q-body">
             <LatexRenderer :content="q.content" />
           </div>
 
-          <!-- 答案折叠 -->
-          <div class="q-answer-wrap">
-            <el-button
-              text
-              size="small"
-              class="toggle-answer"
+          <!-- Answer Toggle -->
+          <div class="q-answer-toggle">
+            <button
+              class="toggle-btn"
               @click="getState(q.slot_id).showAnswer = !getState(q.slot_id).showAnswer"
             >
-              {{ getState(q.slot_id).showAnswer ? '收起答案 ▲' : '查看参考答案 ▼' }}
-            </el-button>
+              {{ getState(q.slot_id).showAnswer ? '收起答案' : '查看参考答案' }}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" :style="{ transform: getState(q.slot_id).showAnswer ? 'rotate(180deg)' : 'none' }">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
             <div v-if="getState(q.slot_id).showAnswer" class="q-answer">
               <div class="answer-label">参考答案</div>
               <LatexRenderer :content="q.answer" />
@@ -246,50 +257,56 @@ function copyAll() {
             </div>
           </div>
 
-          <!-- 满意 / 不满意操作 -->
+          <!-- Satisfaction Buttons -->
           <div class="q-footer">
-            <div class="q-satisfaction">
-              <el-button
-                size="small"
-                :type="getState(q.slot_id).satisfied === true ? 'success' : 'default'"
+            <div class="satisfaction-btns">
+              <button
+                class="sat-btn"
+                :class="{ 'sat-btn--success': getState(q.slot_id).satisfied === true }"
                 @click="getState(q.slot_id).satisfied = true; getState(q.slot_id).expanded = false"
               >
-                ✓ 满意
-              </el-button>
-              <el-button
-                size="small"
-                :type="getState(q.slot_id).satisfied === false ? 'warning' : 'default'"
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                满意
+              </button>
+              <button
+                class="sat-btn"
+                :class="{ 'sat-btn--warning': getState(q.slot_id).satisfied === false }"
                 @click="getState(q.slot_id).satisfied = false; getState(q.slot_id).expanded = true"
               >
-                ✗ 不满意
-              </el-button>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                不满意
+              </button>
             </div>
           </div>
 
-          <!-- 反馈输入区（不满意时展开） -->
-          <div v-if="getState(q.slot_id).expanded" class="q-feedback">
-            <div class="feedback-label">请描述您的修改意见，AI 将据此重新生成这道题：</div>
+          <!-- Feedback Area -->
+          <div v-if="getState(q.slot_id).expanded" class="feedback-area">
+            <div class="feedback-label">请描述您的修改意见，AI 将据此重新生成：</div>
             <el-input
               v-model="getState(q.slot_id).feedback"
               type="textarea"
               :rows="3"
-              placeholder="例如：请把计算题改成证明题；难度太低，请加大难度；公式太少，多加一些推导步骤..."
+              placeholder="例如：请把计算题改成证明题；难度太低，请加大难度..."
               class="feedback-input"
             />
             <div class="feedback-actions">
-              <el-button
-                type="primary"
-                size="small"
-                :loading="getState(q.slot_id).regenerating"
+              <button
+                class="regen-btn"
+                :disabled="getState(q.slot_id).regenerating"
                 @click="doRegenerate(q)"
               >
+                <span v-if="getState(q.slot_id).regenerating" class="spinner"></span>
                 {{ getState(q.slot_id).regenerating ? '重新生成中...' : '重新生成这道题' }}
-              </el-button>
-              <el-button
-                text
-                size="small"
+              </button>
+              <button
+                class="cancel-btn"
                 @click="getState(q.slot_id).expanded = false; getState(q.slot_id).satisfied = null"
-              >取消</el-button>
+              >取消</button>
             </div>
           </div>
         </div>
@@ -299,91 +316,203 @@ function copyAll() {
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  padding-top: var(--space-10);
+  background: var(--color-bg);
+}
+
+/* ── Toolbar ─────────────────────────────────── */
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 16px;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
 }
 
 .toolbar-left {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
 }
 
 .page-title {
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 0;
+  color: var(--color-text);
+  margin-bottom: 2px;
 }
 
-/* 加载卡片 */
+.page-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+/* ── Loading Card ─────────────────────────────── */
 .loading-card {
-  padding: 48px 40px;
-  border-radius: 20px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-10) var(--space-8);
   text-align: center;
-  max-width: 600px;
+  max-width: 520px;
   margin: 0 auto;
 }
 
+.loading-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-5);
+}
+
+.spin-svg {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .loading-title {
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 20px;
   font-weight: 700;
-  margin: 0 0 10px;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
 }
 
 .loading-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0 0 24px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
 }
 
-.loading-progress {
-  margin-bottom: 16px;
+.progress-track {
+  height: 6px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.progress-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
 }
 
 .loading-hint {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
-  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
 }
 
-/* 题目列表 */
+/* ── Question List ─────────────────────────────── */
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-bottom: 40px;
+  gap: var(--space-4);
+  padding-bottom: var(--space-12);
 }
 
+/* ── Question Card ─────────────────────────────── */
 .q-card {
-  border-radius: 14px;
-  padding: 20px 24px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--transition-base);
 }
 
-.q-head {
+.q-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.q-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-secondary);
 }
 
 .q-num {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  background: rgba(129, 140, 248, 0.2);
-  color: #818cf8;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   display: flex;
@@ -392,119 +521,211 @@ function copyAll() {
   flex-shrink: 0;
 }
 
-.q-info {
+.q-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
   flex: 1;
 }
 
 .q-type {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-text);
 }
 
 .q-points {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-secondary);
 }
 
-.q-actions-head {
-  flex-shrink: 0;
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
 }
 
-/* 题目内容 */
-.q-content {
+.status-badge--success {
+  background: #E8F8EE;
+  color: var(--color-success);
+}
+
+.status-badge--warning {
+  background: #FFF4E5;
+  color: var(--color-warning);
+}
+
+/* ── Question Body ─────────────────────────────── */
+.q-body {
+  padding: var(--space-5);
   font-size: 15px;
   line-height: 1.75;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 14px;
-  padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 
-/* 答案区 */
-.q-answer-wrap {
-  margin-bottom: 10px;
+/* ── Answer Toggle ─────────────────────────────── */
+.q-answer-toggle {
+  padding: 0 var(--space-5);
 }
 
-.toggle-answer {
-  color: rgba(255, 255, 255, 0.45);
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 13px;
-  padding: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: var(--space-2) 0;
+  transition: color var(--transition-fast);
+}
+
+.toggle-btn:hover {
+  color: var(--color-primary);
 }
 
 .q-answer {
-  margin-top: 10px;
-  padding: 14px 16px;
-  background: rgba(52, 211, 153, 0.06);
-  border: 1px solid rgba(52, 211, 153, 0.15);
-  border-radius: 8px;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  padding: var(--space-4);
+  background: #F0F9EB;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(52, 199, 89, 0.2);
+  margin-bottom: var(--space-4);
 }
 
 .answer-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #34d399;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 6px;
+  color: var(--color-success);
+  margin-bottom: var(--space-2);
 }
 
 .scoring-section {
-  margin-top: 14px;
+  margin-top: var(--space-3);
 }
 
 .scoring-list {
-  margin: 4px 0 0;
-  padding-left: 18px;
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
   font-size: 13px;
+  color: var(--color-text-secondary);
   line-height: 1.9;
-  color: rgba(255, 255, 255, 0.7);
 }
 
-/* 底部操作 */
+/* ── Footer / Satisfaction ─────────────────────── */
 .q-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border-light);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 8px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.q-satisfaction {
+.satisfaction-btns {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
-/* 反馈区 */
-.q-feedback {
-  margin-top: 14px;
-  padding: 16px;
-  background: rgba(245, 158, 11, 0.07);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 8px;
+.sat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sat-btn:hover {
+  border-color: var(--color-border);
+}
+
+.sat-btn--success {
+  background: #E8F8EE;
+  color: var(--color-success);
+  border-color: rgba(52, 199, 89, 0.3);
+}
+
+.sat-btn--warning {
+  background: #FFF4E5;
+  color: var(--color-warning);
+  border-color: rgba(255, 149, 0, 0.3);
+}
+
+/* ── Feedback Area ─────────────────────────────── */
+.feedback-area {
+  padding: var(--space-4) var(--space-5);
+  background: #FFFBEA;
+  border-top: 1px solid rgba(255, 149, 0, 0.15);
 }
 
 .feedback-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-  margin-bottom: 10px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
 }
 
 .feedback-input {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .feedback-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
+}
+
+.regen-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.regen-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.regen-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 </style>

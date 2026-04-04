@@ -13,16 +13,13 @@ const questionStore = useQuestionStore()
 const questions = computed(() => questionStore.generatedQuestions || [])
 const courseName = computed(() => courseStore.currentCourse?.name || questionStore.courseId || '')
 
-// 保存状态
 const saving = ref(false)
 const saved = ref(false)
 
-// 判断是否为解答题
 function isShortAnswer(question) {
   return question.type === 'short_answer' || question.type === '解答题'
 }
 
-// 检查文本是否包含代码（多行且有缩进）
 function hasCodeBlock(text) {
   if (!text) return false
   const lines = text.split('\n')
@@ -49,7 +46,6 @@ async function regenerate() {
     return
   }
 
-  // 重置保存状态
   saved.value = false
   await questionStore.generate(questionStore.lastGeneratePayload)
 }
@@ -62,31 +58,18 @@ async function exportQuestions() {
 
   try {
     ElMessage.info('正在生成导出文件...')
-    
-    // 调用导出API，返回Markdown文本
     const markdown = await exportMarkdown(questions.value)
-    
-    // 创建Blob对象
     const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
-    
-    // 创建下载链接
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    
-    // 生成文件名：题目_课程名_日期.md
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const filename = `题目_${courseName.value || '未知课程'}_${date}.md`
     link.download = filename
-    
-    // 触发下载
     document.body.appendChild(link)
     link.click()
-    
-    // 清理
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    
     ElMessage.success('导出成功！')
   } catch (error) {
     console.error('导出失败:', error)
@@ -123,9 +106,7 @@ async function saveQuestionsToDb() {
       questions: questions.value,
       knowledge_point_ids: questionStore.selectedKnowledgePointIds
     }
-    
     const result = await saveQuestions(payload)
-    
     if (result.success) {
       saved.value = true
       ElMessage.success(result.message || `成功保存 ${questions.value.length} 道题目`)
@@ -139,229 +120,412 @@ async function saveQuestionsToDb() {
     saving.value = false
   }
 }
+
+const typeTagClass = (type) => {
+  if (type?.includes('选择')) return 'tag--primary'
+  if (type?.includes('判断')) return 'tag--success'
+  if (type?.includes('填空')) return 'tag--warning'
+  if (type?.includes('问答') || type?.includes('简答') || type?.includes('解答')) return 'tag--danger'
+  return ''
+}
+
+const difficultyTagClass = (d) => {
+  if (d === 'easy' || d === '简单') return 'tag--success'
+  if (d === 'hard' || d === '困难') return 'tag--danger'
+  return 'tag--warning'
+}
 </script>
 
 <template>
   <div class="page">
     <div class="container">
-      <div class="header">
-        <div>
-          <div class="page-title">题目结果</div>
-          <div class="page-subtitle">{{ courseName }} · 共 {{ questions.length }} 题</div>
+      <!-- Header -->
+      <div class="page-header animate-fade-in-up">
+        <div class="header-left">
+          <button class="back-btn" @click="goBack">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            返回
+          </button>
+          <div>
+            <h1 class="page-title">题目结果</h1>
+            <p class="page-subtitle">{{ courseName }} · 共 {{ questions.length }} 题</p>
+          </div>
         </div>
-        <div class="actions">
-          <el-button @click="goBack">返回</el-button>
-          <el-button @click="exportQuestions">导出</el-button>
-          <el-button 
-            :type="saved ? 'success' : 'warning'" 
-            :loading="saving" 
-            @click="saveQuestionsToDb"
-          >
+
+        <div class="header-actions">
+          <button class="action-btn" @click="goBack">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            返回
+          </button>
+          <button class="action-btn" @click="exportQuestions">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            导出
+          </button>
+          <button class="action-btn" :class="{ 'action-btn--success': saved }" :loading="saving" @click="saveQuestionsToDb">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16L21 8V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7,3 7,8 15,8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             {{ saved ? '已保存' : '保存' }}
-          </el-button>
-          <el-button type="primary" :loading="questionStore.generating" @click="regenerate">重新生成</el-button>
+          </button>
+          <button class="action-btn action-btn--primary" :loading="questionStore.generating" @click="regenerate">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <polyline points="23,4 23,10 17,10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            重新生成
+          </button>
         </div>
       </div>
 
+      <!-- Empty State -->
       <el-empty v-if="questions.length === 0" description="暂无题目数据，请返回重新生成" />
 
-      <div v-else class="list">
-        <el-card v-for="(q, idx) in questions" :key="idx" class="q-card" shadow="never">
-          <div class="q-top">
-            <div class="q-index">第 {{ idx + 1 }} 题</div>
+      <!-- Question List -->
+      <div v-else class="question-list">
+        <div
+          v-for="(q, idx) in questions"
+          :key="idx"
+          class="q-card animate-fade-in-up"
+          :style="{ animationDelay: `${idx * 60}ms` }"
+        >
+          <!-- Card Header -->
+          <div class="q-card__header">
+            <div class="q-number">第 {{ idx + 1 }} 题</div>
             <div class="q-tags">
-              <el-tag size="small" effect="dark">{{ q.type }}</el-tag>
-              <el-tag size="small" type="info" effect="plain">{{ q.difficulty }}</el-tag>
+              <span class="tag" :class="typeTagClass(q.type)">{{ q.type }}</span>
+              <span class="tag" :class="difficultyTagClass(q.difficulty)">{{ q.difficulty }}</span>
             </div>
           </div>
 
-          <div class="q-block">
+          <!-- Question Content -->
+          <div class="q-section">
             <div class="q-label">题目</div>
             <div class="q-content">{{ q.content }}</div>
           </div>
 
-          <div class="q-block" v-if="q.knowledge_points && q.knowledge_points.length">
+          <!-- Knowledge Points -->
+          <div class="q-section" v-if="q.knowledge_points && q.knowledge_points.length">
             <div class="q-label">考察知识点</div>
-            <div class="kp">
-              <el-tag v-for="(kp, kIdx) in q.knowledge_points" :key="kIdx" size="small" effect="plain" class="kp-tag">
-                {{ kp }}
-              </el-tag>
+            <div class="kp-list">
+              <span v-for="(kp, kIdx) in q.knowledge_points" :key="kIdx" class="kp-chip">{{ kp }}</span>
             </div>
           </div>
 
-          <div class="q-block" v-if="q.options && q.options.length">
+          <!-- Options -->
+          <div class="q-section" v-if="q.options && q.options.length">
             <div class="q-label">选项</div>
             <div class="options">
-              <div v-for="(op, oIdx) in q.options" :key="oIdx" class="option">{{ op }}</div>
+              <div v-for="(op, oIdx) in q.options" :key="oIdx" class="option-item">{{ op }}</div>
             </div>
           </div>
 
-          <div class="q-block">
+          <!-- Answer -->
+          <div class="q-section">
             <div class="q-label">参考答案</div>
-            <!-- 解答题且包含代码块 -->
             <div v-if="isShortAnswer(q) && hasCodeBlock(q.answer)" class="answer-code">
               <pre><code>{{ q.answer }}</code></pre>
             </div>
-            <!-- 普通答案 -->
-            <div v-else class="answer">
+            <div v-else class="answer-text">
               <span v-if="Array.isArray(q.answer)">{{ q.answer.join(', ') }}</span>
               <span v-else>{{ q.answer }}</span>
             </div>
           </div>
 
-          <div class="q-block" v-if="q.explanation">
+          <!-- Explanation -->
+          <div class="q-section" v-if="q.explanation">
             <div class="q-label">解析</div>
-            <div class="explain">{{ q.explanation }}</div>
+            <div class="q-text">{{ q.explanation }}</div>
           </div>
 
-          <div class="q-block" v-if="q.scoring_points && q.scoring_points.length">
+          <!-- Scoring Points -->
+          <div class="q-section" v-if="q.scoring_points && q.scoring_points.length">
             <div class="q-label">评分点</div>
-            <div class="score">
-              <div v-for="(sp, sIdx) in q.scoring_points" :key="sIdx" class="score-item">- {{ sp }}</div>
+            <div class="score-list">
+              <div v-for="(sp, sIdx) in q.scoring_points" :key="sIdx" class="score-item">
+                <span class="score-bullet"></span>
+                {{ sp }}
+              </div>
             </div>
           </div>
-        </el-card>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.header {
+.page {
+  min-height: 100vh;
+  padding-top: var(--space-10);
+  background: var(--color-bg);
+}
+
+/* ── Page Header ────────────────────────────── */
+.page-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+  flex-wrap: wrap;
 }
 
-.actions {
+.header-left {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: var(--space-4);
 }
 
-.list {
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Action Buttons ──────────────────────────── */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.action-btn--success {
+  color: var(--color-success);
+  border-color: rgba(52, 199, 89, 0.3);
+  background: #E8F8EE;
+}
+
+.action-btn--primary {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.action-btn--primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  color: #ffffff;
+}
+
+/* ── Question List ───────────────────────────── */
+.question-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-4);
+  padding-bottom: var(--space-12);
 }
 
+/* ── Question Card ───────────────────────────── */
 .q-card {
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+  transition: box-shadow var(--transition-base);
 }
 
-.q-top {
+.q-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.q-card__header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.q-index {
+.q-number {
+  font-family: var(--font-display);
+  font-size: 16px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--color-text);
 }
 
 .q-tags {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.q-block {
-  margin-top: 14px;
-  text-align: left;
+/* ── Question Sections ───────────────────────── */
+.q-section {
+  margin-bottom: var(--space-4);
+}
+
+.q-section:last-child {
+  margin-bottom: 0;
 }
 
 .q-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.72);
-  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+  margin-bottom: var(--space-2);
 }
 
 .q-content {
-  font-size: 14px;
-  line-height: 1.8;
-  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--color-text);
+  white-space: pre-wrap;
 }
 
-.options {
+.q-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+}
+
+/* ── Knowledge Points ─────────────────────────── */
+.kp-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
-.option {
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.18);
-  color: rgba(255, 255, 255, 0.82);
+.kp-chip {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.answer {
-  font-weight: 650;
-  color: rgba(255, 255, 255, 0.82);
+/* ── Options ────────────────────────────────── */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.option-item {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-light);
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+/* ── Answer ──────────────────────────────────── */
+.answer-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .answer-code {
-  margin-top: 6px;
+  margin-top: var(--space-2);
 }
 
 .answer-code pre {
   margin: 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+  background: #1D1D1F;
   overflow-x: auto;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .answer-code code {
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 13px;
   line-height: 1.7;
-  color: #e8eaed;
+  color: #E8EAED;
   white-space: pre;
   display: block;
-  letter-spacing: 0.02em;
 }
 
-/* 代码块滚动条美化 */
-.answer-code pre::-webkit-scrollbar {
-  height: 8px;
-}
-
-.answer-code pre::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-}
-
-.answer-code pre::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.answer-code pre::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.explain,
-.score {
-  color: rgba(255, 255, 255, 0.82);
-  white-space: pre-wrap;
-  line-height: 1.8;
-}
-
-.kp {
+/* ── Score ───────────────────────────────────── */
+.score-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.kp-tag {
-  border-radius: 999px;
+.score-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.score-bullet {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+  margin-top: 8px;
+  flex-shrink: 0;
 }
 </style>

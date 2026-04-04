@@ -91,6 +91,7 @@ function renderKatex(formula, displayMode) {
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--color-text);
 }
 .latex-block {
   display: block;
@@ -98,7 +99,8 @@ function renderKatex(formula, displayMode) {
   text-align: center;
 }
 .latex-error {
-  color: #ef4444;
-  font-family: monospace;
+  color: var(--color-danger);
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.9em;
 }
 </style>

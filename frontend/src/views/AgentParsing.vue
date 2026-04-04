@@ -8,8 +8,7 @@ import { getParsed, startAnalyze, getAnalyzed } from '../api/agent'
 const router = useRouter()
 const store = useAgentStore()
 
-// ── 状态 ─────────────────────────────────────────────
-const phase = ref('parsing')  // 'parsing' | 'analyzing' | 'done' | 'error'
+const phase = ref('parsing')
 const statusText = ref('正在调用视觉大模型解析 PDF 页面...')
 const detail = ref('')
 const percentage = ref(10)
@@ -17,7 +16,6 @@ const errorMsg = ref('')
 
 let timer = null
 
-// ── 卫兵：没有 sessionId 就打回首页 ───────────────────
 onMounted(() => {
   if (!store.sessionId) {
     ElMessage.warning('请先上传 PDF 文件')
@@ -31,7 +29,6 @@ onUnmounted(() => {
   clearInterval(timer)
 })
 
-// ── 阶段一：轮询解析 ──────────────────────────────────
 function startPollingParse() {
   phase.value = 'parsing'
   statusText.value = '正在调用视觉大模型解析 PDF 页面...'
@@ -58,12 +55,11 @@ function startPollingParse() {
         setError(prog.error || '解析失败')
       }
     } catch {
-      // http.js 已弹出错误
+      // http.js already shows error
     }
   }, 3000)
 }
 
-// ── 阶段二：启动分析后轮询 ────────────────────────────
 async function triggerAnalyze() {
   try {
     await startAnalyze(store.sessionId)
@@ -99,7 +95,7 @@ async function triggerAnalyze() {
         setError(prog.error || '题槽分析失败')
       }
     } catch {
-      // http.js 已弹出错误
+      // http.js already shows error
     }
   }, 3000)
 }
@@ -118,52 +114,70 @@ function retry() {
 <template>
   <div class="page">
     <div class="container narrow">
-      <div class="card glass">
-        <!-- 标题区 -->
+      <div class="progress-card animate-fade-in-up">
+        <!-- Header -->
         <div class="card-header">
-          <h1 class="card-title">
-            <span v-if="phase === 'parsing'">解析往年题中</span>
-            <span v-else-if="phase === 'analyzing'">分析题槽结构中</span>
-            <span v-else-if="phase === 'done'">处理完成 ✓</span>
-            <span v-else>处理失败</span>
-          </h1>
-          <p class="card-desc">{{ statusText }}</p>
+          <div class="phase-icon" :class="`phase-icon--${phase}`">
+            <svg v-if="phase === 'done'" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg v-else-if="phase === 'error'" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+              <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" class="spin-svg">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" stroke-dasharray="40 20" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="card-titles">
+            <h1 class="card-title">
+              <span v-if="phase === 'parsing'">解析往年题中</span>
+              <span v-else-if="phase === 'analyzing'">分析题槽结构中</span>
+              <span v-else-if="phase === 'done'">处理完成</span>
+              <span v-else>处理失败</span>
+            </h1>
+            <p class="card-desc">{{ statusText }}</p>
+          </div>
         </div>
 
-        <!-- 进度条 -->
-        <div v-if="phase !== 'error'" class="progress-wrap">
-          <el-progress
-            :percentage="percentage"
-            :status="phase === 'done' ? 'success' : undefined"
-            :stroke-width="10"
-            :duration="600"
-            striped
-            :striped-flow="phase !== 'done'"
-          />
-          <div class="detail-text" v-if="detail">{{ detail }}</div>
+        <!-- Progress Bar -->
+        <div v-if="phase !== 'error'" class="progress-section">
+          <div class="progress-track">
+            <div
+              class="progress-fill"
+              :class="{ 'progress-fill--done': phase === 'done' }"
+              :style="{ width: `${percentage}%` }"
+            ></div>
+          </div>
+          <div class="progress-meta">
+            <span class="progress-percent">{{ percentage }}%</span>
+            <span class="progress-detail" v-if="detail">{{ detail }}</span>
+          </div>
         </div>
 
-        <!-- 错误态 -->
-        <div v-else class="error-block">
-          <el-alert type="error" :title="errorMsg" show-icon :closable="false" />
-          <el-button type="primary" class="retry-btn" @click="retry">重新上传</el-button>
+        <!-- Error State -->
+        <div v-else class="error-section">
+          <div class="error-message">{{ errorMsg }}</div>
+          <button class="retry-btn" @click="retry">重新上传</button>
         </div>
 
-        <!-- 步骤指示器 -->
+        <!-- Step Indicator -->
         <div class="steps">
           <div class="step" :class="{ active: phase === 'parsing', done: phase !== 'parsing' && phase !== 'error' }">
             <div class="step-dot"></div>
-            <div class="step-label">Agent 1<br />PDF 解析</div>
+            <div class="step-label">PDF 解析</div>
           </div>
-          <div class="step-line" :class="{ done: phase === 'analyzing' || phase === 'done' }"></div>
+          <div class="step-connector" :class="{ done: phase === 'analyzing' || phase === 'done' }"></div>
           <div class="step" :class="{ active: phase === 'analyzing', done: phase === 'done' }">
             <div class="step-dot"></div>
-            <div class="step-label">Agent 2<br />题槽分析</div>
+            <div class="step-label">题槽分析</div>
           </div>
-          <div class="step-line"></div>
+          <div class="step-connector" :class="{ done: phase === 'done' }"></div>
           <div class="step" :class="{ active: phase === 'done' }">
             <div class="step-dot"></div>
-            <div class="step-label">确认题槽<br />开始生题</div>
+            <div class="step-label">确认生成</div>
           </div>
         </div>
       </div>
@@ -172,112 +186,220 @@ function retry() {
 </template>
 
 <style scoped>
-.narrow {
-  max-width: 640px;
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--color-bg);
 }
 
-.card {
-  padding: 40px 36px;
-  border-radius: 20px;
+.container.narrow {
+  max-width: 540px;
+  width: 100%;
 }
 
+/* ── Progress Card ────────────────────────────── */
+.progress-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-10) var(--space-8);
+}
+
+/* ── Header ──────────────────────────────────── */
 .card-header {
-  text-align: center;
-  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.phase-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.phase-icon--parsing,
+.phase-icon--analyzing {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.phase-icon--done {
+  background: #E8F8EE;
+  color: var(--color-success);
+}
+
+.phase-icon--error {
+  background: #FFEBEA;
+  color: var(--color-danger);
+}
+
+.spin-svg {
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.card-titles {
+  flex: 1;
 }
 
 .card-title {
-  font-size: 26px;
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 0 0 10px;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
 }
 
 .card-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
-  margin: 0;
+  color: var(--color-text-secondary);
 }
 
-.progress-wrap {
-  margin-bottom: 36px;
+/* ── Progress ─────────────────────────────────── */
+.progress-section {
+  margin-bottom: var(--space-8);
 }
 
-.detail-text {
-  margin-top: 10px;
+.progress-track {
+  height: 6px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-fill--done {
+  background: var(--color-success);
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}
+
+.progress-percent {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  text-align: center;
+  font-weight: 600;
+  color: var(--color-primary);
 }
 
-.error-block {
-  margin-bottom: 24px;
+.progress-detail {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ── Error ──────────────────────────────────── */
+.error-section {
   text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.error-message {
+  font-size: 14px;
+  color: var(--color-danger);
+  margin-bottom: var(--space-4);
 }
 
 .retry-btn {
-  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  border: none;
+  transition: background var(--transition-fast);
 }
 
-/* 步骤指示器 */
+.retry-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ── Step Indicator ─────────────────────────── */
 .steps {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding-top: 8px;
 }
 
 .step {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: var(--space-2);
 }
 
 .step-dot {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
   transition: all 0.3s;
 }
 
 .step.active .step-dot {
-  background: #818cf8;
-  border-color: #818cf8;
-  box-shadow: 0 0 10px rgba(129, 140, 248, 0.6);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
 }
 
 .step.done .step-dot {
-  background: #34d399;
-  border-color: #34d399;
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 
 .step-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  line-height: 1.5;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
 }
 
-.step.active .step-label,
+.step.active .step-label {
+  color: var(--color-primary);
+}
+
 .step.done .step-label {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-success);
 }
 
-.step-line {
+.step-connector {
   flex: 1;
   height: 2px;
-  background: rgba(255, 255, 255, 0.15);
-  margin: 0 6px;
-  margin-bottom: 24px;
+  background: var(--color-border-light);
+  margin: 0 var(--space-2);
+  min-width: 40px;
   transition: background 0.3s;
 }
 
-.step-line.done {
-  background: #34d399;
+.step-connector.done {
+  background: var(--color-success);
 }
 </style>

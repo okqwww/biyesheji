@@ -99,29 +99,43 @@ async function goBack() {
 <template>
   <div class="page">
     <div class="container">
-      <div class="header">
-        <div class="left">
-          <el-button text @click="goBack">← 返回</el-button>
-          <div class="title">
-            <div class="name">{{ courseStore.currentCourse?.name || courseId }}</div>
-            <div class="muted">点击知识点选择考察范围，点击章节可批量选择/取消</div>
+      <!-- Header -->
+      <div class="header animate-fade-in-up">
+        <div class="header-left">
+          <button class="back-btn" @click="goBack">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            返回
+          </button>
+          <div class="title-group">
+            <div class="course-name">{{ courseStore.currentCourse?.name || courseId }}</div>
+            <div class="course-hint muted">点击知识点选择考察范围，点击章节可批量选择</div>
           </div>
         </div>
-        <el-tag effect="dark" size="small">已选 {{ questionStore.selectedKnowledgePointIds.length }}</el-tag>
+        <div class="selection-badge" v-if="questionStore.selectedKnowledgePointIds.length > 0">
+          <span class="badge-count">{{ questionStore.selectedKnowledgePointIds.length }}</span>
+          <span class="badge-label">已选</span>
+        </div>
       </div>
 
-      <div class="layout">
-        <div class="graph glass">
-          <GraphView
-            :nodes="nodes"
-            :edges="edges"
-            :selected-knowledge-point-ids="questionStore.selectedKnowledgePointIds"
-            @toggle-knowledge-point="toggleKnowledgePoint"
-            @toggle-chapter="toggleChapter"
-          />
+      <!-- Main Layout -->
+      <div class="layout animate-fade-in-up" style="animation-delay: 60ms">
+        <!-- Graph Area -->
+        <div class="graph-area">
+          <div class="graph-inner">
+            <GraphView
+              :nodes="nodes"
+              :edges="edges"
+              :selected-knowledge-point-ids="questionStore.selectedKnowledgePointIds"
+              @toggle-knowledge-point="toggleKnowledgePoint"
+              @toggle-chapter="toggleChapter"
+            />
+          </div>
         </div>
 
-        <div class="panel">
+        <!-- Config Panel -->
+        <div class="panel-area">
           <ConfigPanel
             :selected-knowledge-points="selectedKnowledgePoints"
             :question-type="questionStore.questionType"
@@ -140,46 +154,112 @@ async function goBack() {
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  padding-top: var(--space-8);
+  background: var(--color-bg);
+}
+
+/* ── Header ─────────────────────────────────── */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
-.left {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-4);
 }
 
-.title .name {
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.back-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
+
+.course-name {
+  font-family: var(--font-display);
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
 }
 
+.course-hint {
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.selection-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--color-primary-light);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+}
+
+.badge-count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.badge-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+/* ── Layout ──────────────────────────────────── */
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.graph {
-  padding: 12px;
+.graph-area {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
 }
 
-.panel {
+.graph-inner {
+  padding: var(--space-3);
+}
+
+.panel-area {
   position: sticky;
-  top: 14px;
-  height: fit-content;
+  top: var(--space-4);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
-  .panel {
+
+  .panel-area {
     position: static;
   }
 }

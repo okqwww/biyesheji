@@ -1,34 +1,89 @@
+/* ====================================================
+   Apple Design System — Global Styles
+   ==================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+/* ── Design Tokens ─────────────────────────────── */
 :root {
-  --bg: #0b0f17;
-  --bg-soft: rgba(255, 255, 255, 0.06);
-  --text: rgba(255, 255, 255, 0.92);
-  --text-dim: rgba(255, 255, 255, 0.72);
-  --border: rgba(255, 255, 255, 0.12);
-  --shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
-  --radius: 16px;
+  /* Colors */
+  --color-primary: #007AFF;
+  --color-primary-hover: #0071E3;
+  --color-primary-light: #E5F1FF;
+  --color-success: #34C759;
+  --color-warning: #FF9500;
+  --color-danger: #FF3B30;
 
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: var(--text);
-  background: radial-gradient(1200px 600px at 20% 10%, rgba(99, 102, 241, 0.25), transparent 60%),
-    radial-gradient(900px 500px at 80% 20%, rgba(16, 185, 129, 0.18), transparent 60%),
-    radial-gradient(1000px 600px at 60% 80%, rgba(59, 130, 246, 0.18), transparent 60%),
-    var(--bg);
+  --color-bg: #FAFAFA;
+  --color-bg-secondary: #F5F5F7;
+  --color-bg-card: #FFFFFF;
+  --color-bg-nav: rgba(250, 250, 250, 0.85);
 
-  text-rendering: optimizeLegibility;
+  --color-text: #1D1D1F;
+  --color-text-secondary: #86868B;
+  --color-text-tertiary: #AEAEB2;
+
+  --color-border: #D2D2D7;
+  --color-border-light: #E5E5EA;
+
+  /* Shadows — Apple style (single-direction, subtle) */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.10), 0 8px 32px rgba(0,0,0,0.08);
+  --shadow-nav: 0 1px 0 rgba(0,0,0,0.06);
+  --shadow-button: 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Typography */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Spacing (8px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Base Reset ───────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-html,
-body {
-  height: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  margin: 0;
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  min-height: 100vh;
 }
 
 #app {
@@ -40,39 +95,231 @@ a {
   text-decoration: none;
 }
 
-.app-shell {
-  min-height: 100vh;
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
 }
 
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Typography Helpers ────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-primary { color: var(--color-text); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-accent { color: var(--color-primary); }
+
+/* ── Layout Helpers ────────────────────────────── */
 .page {
   min-height: 100vh;
-  padding: 28px 20px 56px;
+  padding: 0 0 var(--space-16);
 }
 
 .container {
   max-width: 1120px;
   margin: 0 auto;
+  padding: 0 var(--space-6);
 }
 
-.glass {
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
+.container.narrow {
+  max-width: 720px;
+}
+
+/* ── Navigation Bar ────────────────────────────── */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  background: var(--color-bg-nav);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background var(--transition-base);
+}
+
+.nav-bar__inner {
+  max-width: 1120px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-bar__brand {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.nav-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ── Card ──────────────────────────────────────── */
+.card {
+  background: var(--color-bg-card);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-light);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
-.page-title {
-  font-size: 32px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin: 0;
+.card--hoverable:hover {
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
 
-.page-subtitle {
-  margin: 10px 0 0;
-  color: var(--text-dim);
+/* ── Tags / Pills ──────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-light);
+}
+
+.tag--primary {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.tag--success {
+  background: #E8F8EE;
+  color: #248A3D;
+  border-color: rgba(52, 199, 89, 0.2);
+}
+
+.tag--warning {
+  background: #FFF4E5;
+  color: #B35900;
+  border-color: rgba(255, 149, 0, 0.2);
+}
+
+.tag--danger {
+  background: #FFEBEA;
+  color: #C9312C;
+  border-color: rgba(255, 59, 48, 0.2);
+}
+
+/* ── Section Title ─────────────────────────────── */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Animations ────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease both;
+}
+
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* ── Selection ─────────────────────────────────── */
+::selection {
+  background: rgba(0, 122, 255, 0.2);
+  color: var(--color-text);
+}
+
+/* ── Focus ─────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Utility ───────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: var(--space-6) 0;
 }
 
 .muted {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }

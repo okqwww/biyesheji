@@ -25,16 +25,26 @@ function buildOption() {
       name: n.name,
       value: n.description || '',
       category: isChapter ? 0 : 1,
-      symbolSize: isChapter ? 46 : 22,
+      symbolSize: isChapter ? 52 : 26,
       itemStyle: {
-        color: isChapter ? 'rgba(255,255,255,0.18)' : isSelected ? '#10b981' : 'rgba(255,255,255,0.10)',
-        borderColor: isSelected ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.18)',
+        color: isChapter
+          ? '#E5E5EA'
+          : isSelected
+            ? '#007AFF'
+            : '#F5F5F7',
+        borderColor: isChapter
+          ? '#D2D2D7'
+          : isSelected
+            ? '#007AFF'
+            : '#D2D2D7',
         borderWidth: isSelected ? 2 : 1,
       },
       label: {
         show: true,
-        color: 'rgba(255,255,255,0.88)',
+        color: isChapter ? '#1D1D1F' : '#1D1D1F',
         fontSize: isChapter ? 13 : 12,
+        fontFamily: 'Inter, -apple-system, sans-serif',
+        fontWeight: isChapter ? 600 : 400,
       },
     }
   })
@@ -45,13 +55,11 @@ function buildOption() {
       source: e.source,
       target: e.target,
       lineStyle: {
-        color:
-          e.type === 'relates_to'
-            ? 'rgba(99, 102, 241, 0.45)'
-            : e.type === 'contains'
-              ? 'rgba(255, 255, 255, 0.22)'
-              : 'rgba(255, 255, 255, 0.16)',
+        color: e.type === 'relates_to'
+          ? 'rgba(0, 122, 255, 0.35)'
+          : 'rgba(0, 0, 0, 0.12)',
         width: e.type === 'relates_to' ? 2 : 1,
+        type: e.type === 'relates_to' ? 'dashed' : 'solid',
       },
     }))
 
@@ -59,11 +67,21 @@ function buildOption() {
     backgroundColor: 'transparent',
     tooltip: {
       trigger: 'item',
+      backgroundColor: '#ffffff',
+      borderColor: '#D2D2D7',
+      borderWidth: 1,
+      borderRadius: 8,
+      padding: [8, 12],
+      textStyle: {
+        color: '#1D1D1F',
+        fontSize: 12,
+        fontFamily: 'Inter, -apple-system, sans-serif',
+      },
       formatter: (p) => {
         const name = p?.data?.name || ''
         const desc = p?.data?.value || ''
-        if (!desc) return name
-        return `${name}<br/><span style="opacity:.75">${desc}</span>`
+        if (!desc) return `<b>${name}</b>`
+        return `<b>${name}</b><br/><span style="color:#86868B;font-size:11px">${desc}</span>`
       },
     },
     series: [
@@ -75,11 +93,21 @@ function buildOption() {
         data: nodes,
         links,
         force: {
-          repulsion: 180,
-          edgeLength: 120,
+          repulsion: 200,
+          edgeLength: 130,
+          layoutAnimation: true,
         },
         label: { position: 'right' },
-        emphasis: { focus: 'adjacency' },
+        emphasis: {
+          focus: 'adjacency',
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 122, 255, 0.3)',
+          },
+        },
+        lineStyle: {
+          curveness: 0.1,
+        },
       },
     ],
   }
@@ -92,7 +120,11 @@ function render() {
 
 onMounted(() => {
   if (!elRef.value) return
-  chart = echarts.init(elRef.value)
+  chart = echarts.init(elRef.value, null, { renderer: 'canvas' })
+
+  // Set light theme background
+  chart.getZr().setBackgroundColor('transparent')
+
   chart.on('click', (params) => {
     const id = params?.data?.id
     if (!id) return
@@ -135,8 +167,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .graph {
-  height: calc(100vh - 160px);
-  min-height: 520px;
+  height: calc(100vh - 200px);
+  min-height: 500px;
   width: 100%;
 }
 </style>

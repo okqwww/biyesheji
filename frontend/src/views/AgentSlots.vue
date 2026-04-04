@@ -12,7 +12,6 @@ const store = useAgentStore()
 const starting = ref(false)
 const modLevel = ref(store.modificationLevel)
 
-// 可编辑的题槽副本（深拷贝，避免直接改 store）
 const editableSlots = ref([])
 
 const levelOptions = [
@@ -27,12 +26,10 @@ onMounted(() => {
     router.replace('/agent/upload')
     return
   }
-  // 深拷贝一份用于编辑
   editableSlots.value = JSON.parse(JSON.stringify(store.slotTemplate))
 })
 
-// ── 知识点标签编辑 ────────────────────────────────
-const newKfInputs = ref({})  // { [slot_id]: string }
+const newKfInputs = ref({})
 
 function addKf(slot) {
   const val = (newKfInputs.value[slot.slot_id] || '').trim()
@@ -48,7 +45,6 @@ function removeKf(slot, kf) {
 
 async function generate() {
   store.modificationLevel = modLevel.value
-  // 将编辑后的题槽写回 store，并传给后端覆盖 session
   store.slotTemplate = JSON.parse(JSON.stringify(editableSlots.value))
   starting.value = true
   try {
@@ -56,44 +52,52 @@ async function generate() {
     store.generating = true
     router.push('/agent/draft')
   } catch {
-    // http.js 已弹出错误
+    // http.js already shows error
   } finally {
     starting.value = false
   }
 }
 
 function typeColor(type) {
-  if (type?.includes('选择')) return '#818cf8'
-  if (type?.includes('判断')) return '#34d399'
-  if (type?.includes('填空')) return '#f59e0b'
-  if (type?.includes('问答') || type?.includes('简答')) return '#60a5fa'
-  if (type?.includes('计算') || type?.includes('解答') || type?.includes('大题')) return '#f87171'
-  return '#a78bfa'
+  if (type?.includes('选择')) return '#007AFF'
+  if (type?.includes('判断')) return '#34C759'
+  if (type?.includes('填空')) return '#FF9500'
+  if (type?.includes('问答') || type?.includes('简答')) return '#AF52DE'
+  if (type?.includes('计算') || type?.includes('解答') || type?.includes('大题')) return '#FF3B30'
+  return '#86868B'
 }
 </script>
 
 <template>
   <div class="page">
     <div class="container">
-      <div class="page-header">
-        <el-button text @click="$router.push('/agent/parsing')">← 返回进度页</el-button>
-        <h1 class="page-title">确认题槽结构</h1>
-        <p class="page-desc">
-          以下是 AI 从历年试卷中识别到的 <strong>{{ editableSlots.length }} 个题槽</strong>，每个题槽对应试卷中固定的一道题。
-          可直接编辑题型、分值和知识点，确认无误后选择改动幅度并开始生成。
-        </p>
+      <!-- Page Header -->
+      <div class="page-header animate-fade-in-up">
+        <button class="back-btn" @click="$router.push('/agent/parsing')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          返回
+        </button>
+        <div>
+          <h1 class="page-title">确认题槽结构</h1>
+          <p class="page-desc">
+            以下是 AI 从历年试卷中识别到的 <strong>{{ editableSlots.length }} 个题槽</strong>，可直接编辑确认。
+          </p>
+        </div>
       </div>
 
+      <!-- Slots Grid -->
       <div class="slots-grid">
-        <el-card
-          v-for="slot in editableSlots"
+        <div
+          v-for="(slot, idx) in editableSlots"
           :key="slot.slot_id"
-          class="slot-card glass"
-          shadow="never"
+          class="slot-card animate-fade-in-up"
+          :style="{ animationDelay: `${idx * 50}ms` }"
         >
-          <div class="slot-head">
-            <div class="slot-type-badge" :style="{ background: typeColor(slot.type) + '22', color: typeColor(slot.type), borderColor: typeColor(slot.type) + '55' }">
-              <!-- 题型可编辑 -->
+          <!-- Slot Header -->
+          <div class="slot-header">
+            <div class="slot-type" :style="{ background: typeColor(slot.type) + '18', color: typeColor(slot.type), borderColor: typeColor(slot.type) + '30' }">
               <el-input
                 v-model="slot.type"
                 size="small"
@@ -101,8 +105,7 @@ function typeColor(type) {
                 :style="{ color: typeColor(slot.type) }"
               />
             </div>
-            <div class="slot-meta">
-              <!-- 分值可编辑 -->
+            <div class="slot-points">
               <el-input-number
                 v-model="slot.points"
                 :min="1"
@@ -115,30 +118,34 @@ function typeColor(type) {
             </div>
           </div>
 
-          <!-- 知识点标签（可删除 + 新增） -->
+          <!-- Knowledge Focus Tags -->
           <div class="slot-kf">
-            <el-tag
+            <span
               v-for="kf in slot.knowledge_focus"
               :key="kf"
-              size="small"
-              type="info"
-              effect="plain"
-              closable
-              class="kf-tag"
-              @close="removeKf(slot, kf)"
-            >{{ kf }}</el-tag>
+              class="kf-chip"
+            >
+              {{ kf }}
+              <button class="kf-remove" @click="removeKf(slot, kf)">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none">
+                  <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </span>
             <div class="kf-add">
               <el-input
                 v-model="newKfInputs[slot.slot_id]"
                 size="small"
-                placeholder="+ 添加知识点"
+                placeholder="添加知识点"
                 class="kf-input"
                 @keyup.enter="addKf(slot)"
               />
-              <el-button size="small" text @click="addKf(slot)">添加</el-button>
+              <button class="kf-add-btn" @click="addKf(slot)">添加</button>
             </div>
           </div>
 
+          <!-- History -->
           <el-collapse v-if="slot.history?.length" class="history-collapse">
             <el-collapse-item :title="`历年题目（${slot.history.length} 题）`">
               <div
@@ -151,91 +158,126 @@ function typeColor(type) {
               </div>
             </el-collapse-item>
           </el-collapse>
-        </el-card>
+        </div>
       </div>
 
-      <!-- 底部操作区 -->
-      <div class="bottom-panel glass">
+      <!-- Bottom Action Bar -->
+      <div class="bottom-bar animate-fade-in">
         <div class="level-section">
-          <div class="level-label">选择改动幅度</div>
-          <el-radio-group v-model="modLevel" class="level-group">
-            <el-radio-button
+          <div class="level-label">改动幅度</div>
+          <div class="level-options">
+            <button
               v-for="opt in levelOptions"
               :key="opt.value"
-              :value="opt.value"
-              class="level-radio"
+              class="level-btn"
+              :class="{ 'level-btn--active': modLevel === opt.value }"
+              @click="modLevel = opt.value"
             >
-              <div class="level-radio-inner">
-                <div class="level-name">{{ opt.label }}</div>
-                <div class="level-desc">{{ opt.desc }}</div>
-              </div>
-            </el-radio-button>
-          </el-radio-group>
+              <div class="level-name">{{ opt.label }}</div>
+              <div class="level-desc">{{ opt.desc }}</div>
+            </button>
+          </div>
         </div>
 
-        <el-button
-          type="primary"
-          size="large"
-          :loading="starting"
+        <button
           class="gen-btn"
+          :class="{ 'gen-btn--active': !starting }"
+          :disabled="starting"
           @click="generate"
         >
-          {{ starting ? '启动中...' : `开始生成试卷（${levelOptions.find(o=>o.value===modLevel)?.label}）` }}
-        </el-button>
+          <span v-if="starting" class="spinner"></span>
+          开始生成试卷（{{ levelOptions.find(o => o.value === modLevel)?.label }}）
+        </button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  padding-top: var(--space-10);
+  background: var(--color-bg);
+  padding-bottom: 120px;
+}
+
+/* ── Page Header ────────────────────────────── */
 .page-header {
-  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-top: 4px;
+}
+
+.back-btn:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 12px 0 8px;
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
 }
 
 .page-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.65);
-  line-height: 1.6;
-  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .page-desc strong {
-  color: #818cf8;
+  color: var(--color-primary);
 }
 
-/* 题槽网格 */
+/* ── Slots Grid ─────────────────────────────── */
 .slots-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
-  margin-bottom: 100px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
+/* ── Slot Card ─────────────────────────────── */
 .slot-card {
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  transition: box-shadow var(--transition-base);
 }
 
-.slot-card :deep(.el-card__body) {
-  padding: 18px;
+.slot-card:hover {
+  box-shadow: var(--shadow-card-hover);
 }
 
-.slot-head {
+.slot-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-4);
 }
 
-.slot-type-badge {
+.slot-type {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
@@ -245,223 +287,286 @@ function typeColor(type) {
   font-weight: 600;
 }
 
-.slot-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.slot-points {
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.slot-kf {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.kf-tag {
-  font-size: 12px;
-}
-
-/* 题型输入框 */
 .type-input {
-  width: 120px;
+  width: 110px;
 }
 
 .type-input :deep(.el-input__wrapper) {
-  background: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  box-shadow: none !important;
   padding: 0 4px;
 }
 
 .type-input :deep(.el-input__inner) {
-  color: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  height: 24px;
+  color: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 24px !important;
 }
 
-/* 分值输入框 */
+.slot-points {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .points-input {
-  width: 80px;
+  width: 72px;
 }
 
 .points-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: none;
+  background: var(--color-bg-secondary) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
 }
 
 .points-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 700;
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  text-align: center !important;
 }
 
 .points-unit {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-secondary);
 }
 
-/* 知识点新增区 */
+/* ── Knowledge Focus ─────────────────────────── */
+.slot-kf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}
+
+.kf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kf-remove {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.kf-remove:hover {
+  opacity: 1;
+}
+
 .kf-add {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-top: 4px;
 }
 
 .kf-input {
-  width: 120px;
+  width: 110px;
 }
 
 .kf-input :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  background: var(--color-bg-secondary) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
 }
 
 .kf-input :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
+}
+
+.kf-add-btn {
   font-size: 12px;
-}
-
-.history-collapse :deep(.el-collapse) {
+  font-weight: 500;
+  color: var(--color-primary);
+  cursor: pointer;
+  background: none;
   border: none;
-  background: transparent;
-}
-
-.history-collapse :deep(.el-collapse-item__header) {
-  background: transparent;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 0;
-  height: 36px;
 }
 
-.history-collapse :deep(.el-collapse-item__wrap) {
-  background: transparent;
-  border: none;
-}
-
-.history-collapse :deep(.el-collapse-item__content) {
-  background: transparent;
-  padding: 12px 0 0;
-  color: rgba(255, 255, 255, 0.7);
+/* ── History ─────────────────────────────────── */
+.history-collapse {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--space-3);
 }
 
 .history-item {
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .history-item:last-child {
   border-bottom: none;
   margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .history-year {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #818cf8;
+  color: var(--color-primary);
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .history-content {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
   line-height: 1.6;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* 底部面板 */
-.bottom-panel {
+/* ── Bottom Bar ─────────────────────────────── */
+.bottom-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 16px 32px;
-  background: rgba(15, 15, 25, 0.92);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: var(--space-4) var(--space-6);
+  background: rgba(250, 250, 250, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--color-border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: var(--space-5);
   z-index: 100;
 }
 
 .level-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   flex: 1;
 }
 
 .level-label {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  white-space: nowrap;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
-.level-group {
+.level-options {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
-.level-radio :deep(.el-radio-button__inner) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.7);
-  padding: 6px 14px;
-  height: auto;
-  border-radius: 8px !important;
+.level-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  border: 1.5px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 120px;
 }
 
-.level-radio-inner {
-  text-align: left;
+.level-btn:hover {
+  border-color: var(--color-border);
+}
+
+.level-btn--active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
 }
 
 .level-name {
   font-size: 13px;
   font-weight: 600;
+  color: var(--color-text);
+}
+
+.level-btn--active .level-name {
+  color: var(--color-primary);
 }
 
 .level-desc {
   font-size: 11px;
-  opacity: 0.65;
-  margin-top: 2px;
-  max-width: 160px;
+  color: var(--color-text-tertiary);
   white-space: normal;
   line-height: 1.3;
 }
 
 .gen-btn {
-  height: 44px;
-  padding: 0 28px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
+  border: none;
+  cursor: not-allowed;
+  transition: all var(--transition-base);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+.gen-btn--active {
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.gen-btn--active:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
-  .bottom-panel {
+  .bottom-bar {
     flex-direction: column;
     align-items: stretch;
   }
+
   .level-section {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .slots-grid {
     grid-template-columns: 1fr;
   }

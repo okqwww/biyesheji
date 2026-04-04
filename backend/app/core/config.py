@@ -22,7 +22,13 @@ class Settings(BaseSettings):
     
     # 大模型API配置
     DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
-    DEEPSEEK_API_URL: str = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/v1/chat/completions")
+    DEEPSEEK_API_URL: str = os.getenv("DEEPSEEK_API_URL", "https://api.deepseek.com/v1")
+    DEEPSEEK_MODEL: str = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+
+    # Agent 4 专用：httpx 直连 DeepSeek 官方（与全局 OpenAI SDK 通道分离，便于其它 Agent 仍走 MiniMax 等）
+    AGENT4_LLM_BASE_URL: str = os.getenv("AGENT4_LLM_BASE_URL", "https://api.deepseek.com/v1")
+    AGENT4_LLM_API_KEY: Optional[str] = os.getenv("AGENT4_LLM_API_KEY")
+    AGENT4_LLM_MODEL: str = os.getenv("AGENT4_LLM_MODEL", "deepseek-chat")
 
     # 视觉模型API配置（通义千问 Qwen-VL-Max）
     QWEN_VL_API_KEY: Optional[str] = os.getenv("QWEN_VL_API_KEY")

@@ -5,7 +5,7 @@ vision_service.py
 
 import base64
 import logging
-
+import httpx
 from openai import AsyncOpenAI
 
 from app.core.config import settings
@@ -26,6 +26,9 @@ def _make_client() -> AsyncOpenAI:
     return AsyncOpenAI(
         api_key=settings.QWEN_VL_API_KEY,
         base_url=settings.QWEN_VL_API_URL,
+        timeout=360,
+        max_retries=0,
+        http_client=httpx.AsyncClient(trust_env=False),  # 不读系统/环境代理，直连 NewAPI
     )
 
 

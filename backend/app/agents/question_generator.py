@@ -217,12 +217,17 @@ def _try_parse(raw: str) -> Optional[dict]:
         return None
 
 
+def _strip_think_block(text: str) -> str:
+    """剔除推理模型输出的 <think>...</think> 块，只保留最终答案部分。"""
+    return re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+
+
 def _parse_question_response(text: str) -> Optional[dict]:
     """
     从 LLM 返回文本中鲁棒地提取题目 JSON 对象。
     兼容 ```json ... ``` 包裹、前后有说明文字、以及 LaTeX 反斜杠未转义等情况。
     """
-    text = text.strip()
+    text = _strip_think_block(text)
 
     # 直接解析（含 LaTeX 修复）
     result = _try_parse(text)
@@ -267,7 +272,7 @@ async def generate_one_question(
     previous_content: Optional[str] = None,
 ) -> dict:
     """
-    为单个题槽调用 DeepSeek 生成一道题目。
+    为单个题槽调用 DeepSeek（httpx 官方接口）生成一道题目。
 
     Returns:
         题目 dict，结构见 ExamState.generated_questions 注释。
@@ -283,8 +288,12 @@ async def generate_one_question(
     )
 
     logger.info("开始生成题槽 %s（%s，%s 分）...", slot_id, slot.get("type"), slot.get("points"))
-    response = await llm_service.call_deepseek_api(
-        prompt, max_retries=2, tag=f"Agent4/generate_slot_{slot_id}"
+    # OpenAI SDK 通道（与其它 Agent 相同，.env 为 MiniMax 时走 MiniMax）— 已停用 Agent4
+    # response = await llm_service.call_deepseek_api(
+    #     prompt, max_retries=1, tag=f"Agent4/generate_slot_{slot_id}"
+    # )
+    response = await llm_service.call_agent4_deepseek_httpx(
+        prompt, max_retries=1, tag=f"Agent4/generate_slot_{slot_id}"
     )
 
     if not response:
@@ -344,7 +353,7 @@ async def agent4_generate_questions(state: ExamState) -> dict:
     LangGraph 节点入口函数。
 
     读取 state["slot_template"] 和 state["modification_level"]，
-    asyncio.gather 并行为每个题槽生成一道题目，
+    并行调用 LLM 为每个题槽生成一道题目（信号量限流已关闭），
     将结果写入 state["generated_questions"]，更新 generate_status。
     """
     slots: list[dict] = state.get("slot_template", [])
@@ -368,15 +377,18 @@ async def agent4_generate_questions(state: ExamState) -> dict:
         for slot in slots
     }
 
-    tasks = [
-        generate_one_question(
+    # 限制并发数，避免同时打出大量请求触发 API 限速（已注释以提速）
+    # sem = asyncio.Semaphore(3)
+
+    async def _generate_with_sem(slot: dict) -> dict:
+        # async with sem:
+        return await generate_one_question(
             slot=slot,
             modification_level=modification_level,
             other_summary=other_summaries[slot["slot_id"]],
         )
-        for slot in slots
-    ]
 
+    tasks = [_generate_with_sem(slot) for slot in slots]
     results: list[dict] = await asyncio.gather(*tasks)
 
     error_count = sum(1 for r in results if "error" in r)

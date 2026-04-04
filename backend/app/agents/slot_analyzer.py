@@ -190,12 +190,17 @@ def _try_parse(raw: str) -> Optional[dict]:
         return None
 
 
+def _strip_think_block(text: str) -> str:
+    """剔除推理模型输出的 <think>...</think> 块，只保留最终答案部分。"""
+    return re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+
+
 def _parse_slot_response(text: str) -> Optional[dict]:
     """
     从 LLM 返回文本中提取第一个有效 JSON 对象。
     兼容模型在 JSON 前后附加说明文字、```json ... ``` 包裹以及 LaTeX 反斜杠未转义等情况。
     """
-    text = text.strip()
+    text = _strip_think_block(text)
 
     # 先尝试整体解析（含 LaTeX 修复）
     result = _try_parse(text)
@@ -259,11 +264,13 @@ async def agent2_analyze_slots(state: ExamState) -> dict:
         exams_text=exams_text,
     )
 
-    # 3. 调用 DeepSeek
-    logger.info("调用 DeepSeek API 分析题槽结构...")
-    response = await llm_service.call_deepseek_api(prompt, max_retries=2, tag="Agent2/slot_analyze")
+    # 3. 调用 DeepSeek（使用流式 API，更稳定）
+    logger.info("调用 DeepSeek API 分析题槽结构（流式模式）...")
+    raw_text = await llm_service.call_deepseek_api_streaming(
+        prompt, max_retries=3, tag="Agent2/slot_analyze"
+    )
 
-    if not response:
+    if not raw_text:
         logger.error("DeepSeek API 返回空响应")
         return {
             "slot_template": [],
@@ -271,29 +278,18 @@ async def agent2_analyze_slots(state: ExamState) -> dict:
             "analyze_progress": {"error": "DeepSeek API 返回空响应，请检查 API Key 和网络连接。"},
         }
 
-    # 4. 提取 LLM 文本内容
-    try:
-        raw_text = response["choices"][0]["message"]["content"]
-    except (KeyError, IndexError) as exc:
-        logger.error("解析 DeepSeek 响应结构失败: %s", exc)
-        return {
-            "slot_template": [],
-            "analyze_status": "error",
-            "analyze_progress": {"error": f"解析 DeepSeek 响应结构失败: {exc}"},
-        }
-
     logger.info("DeepSeek 返回内容长度：%d 字符", len(raw_text))
 
-    # 5. 解析 JSON
+    # 4. 解析 JSON
     result_json = _parse_slot_response(raw_text)
     if not result_json:
-        logger.error("无法从 DeepSeek 响应中提取 JSON，原始内容前 500 字符：%s", raw_text)
+        logger.error("无法从 DeepSeek 响应中提取 JSON，原始内容前 500 字符：%s", raw_text[:500])
         return {
             "slot_template": [],
             "analyze_status": "error",
             "analyze_progress": {
                 "error": "无法解析 LLM 返回的 JSON",
-                "raw_preview": raw_text,
+                "raw_preview": raw_text[:500],
             },
         }
 

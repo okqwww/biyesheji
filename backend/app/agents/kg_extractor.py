@@ -13,10 +13,6 @@ import logging
 import re
 from typing import Optional
 
-import httpx
-
-from app.core.config import settings
-from app.core.logging import log_llm_call
 from app.db.neo4j import neo4j
 
 logger = logging.getLogger(__name__)
@@ -111,10 +107,17 @@ def _fix_latex_escapes(text: str) -> str:
     return ''.join(result)
 
 
+def _strip_think_block(text: str) -> str:
+    """剔除推理模型输出的 <think>...</think> 块，只保留最终答案部分。"""
+    return re.sub(r"<think>[\s\S]*?</think>", "", text, flags=re.IGNORECASE).strip()
+
+
 def _parse_kg_response(raw: str) -> Optional[dict]:
     """
     从 LLM 输出中提取知识图谱 JSON，兼容 markdown 代码块包裹和 LaTeX 反斜杠未转义。
     """
+    raw = _strip_think_block(raw)
+
     # 尝试从 ```json ... ``` 中提取
     m = re.search(r"```(?:json)?\s*([\s\S]+?)\s*```", raw)
     if m:
@@ -139,29 +142,12 @@ def _parse_kg_response(raw: str) -> Optional[dict]:
 
 
 async def _call_deepseek(prompt: str) -> str:
-    """调用 DeepSeek API，返回原始文本响应。"""
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}",
-    }
-    payload = {
-        "model": "deepseek-chat",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-        "max_tokens": 4096,
-    }
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        resp = await client.post(settings.DEEPSEEK_API_URL, json=payload, headers=headers)
-        resp.raise_for_status()
-        data = resp.json()
-        raw_text = data["choices"][0]["message"]["content"]
-    log_llm_call(
-        model="deepseek-chat",
-        prompt=prompt,
-        response=raw_text,
-        tag="Agent1.5/kg_extract",
-    )
-    return raw_text
+    """调用大模型 API，返回原始文本响应。"""
+    from app.services.llm_service import llm_service
+    resp = await llm_service.call_deepseek_api(prompt, tag="Agent1.5/kg_extract")
+    if resp is None:
+        raise RuntimeError("大模型 API 调用失败，请检查日志")
+    return resp["choices"][0]["message"]["content"]
 
 
 def _write_to_neo4j(session_id: str, course_name: str, nodes: list[dict], edges: list[dict]) -> None:

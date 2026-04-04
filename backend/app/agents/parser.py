@@ -314,15 +314,21 @@ async def parse_single_pdf(
     total_pages = len(images)
     logger.info("PDF 共 %d 页", total_pages)
 
-    # 逐页识别（并发，但限制并发数量避免超出 API 速率）
-    semaphore = asyncio.Semaphore(3)  # 最多 3 页同时请求
+    # 逐页识别（全并发；以下信号量限流已注释以提速，可能触发 NewAPI 限速）
+    # local_sem = asyncio.Semaphore(3)  # 单 PDF 内最多 N 页同时请求
+    # global_sem 见 agent1_parse_pdfs 中 vision_sem
 
     async def recognize_with_sem(idx: int, img: bytes) -> dict:
-        async with semaphore:
-            result = await recognize_page(img, idx + 1, total_pages)
-            if progress_callback:
-                await progress_callback(idx + 1, total_pages)
-            return result
+        # async with local_sem:
+        #     if global_sem is not None:
+        #         async with global_sem:
+        #             result = await recognize_page(img, idx + 1, total_pages)
+        #     else:
+        #         result = await recognize_page(img, idx + 1, total_pages)
+        result = await recognize_page(img, idx + 1, total_pages)
+        if progress_callback:
+            await progress_callback(idx + 1, total_pages)
+        return result
 
     tasks = [recognize_with_sem(i, img) for i, img in enumerate(images)]
     page_results: list[dict] = await asyncio.gather(*tasks)
@@ -357,6 +363,9 @@ async def agent1_parse_pdfs(state: ExamState) -> dict:
         return {"parsed_exams": [], "parse_status": "done"}
 
     logger.info("并发解析 %d 份 PDF...", len(pdf_paths))
+
+    # 全局信号量：跨 PDF 最多 N 个并发视觉请求（已注释以提速）
+    # vision_sem = asyncio.Semaphore(3)
 
     async def _safe_parse(pdf_path: str):
         """解析单份 PDF，失败返回 Exception 而非抛出。"""

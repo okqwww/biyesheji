@@ -40,7 +40,10 @@ class Settings(BaseSettings):
 
     # 日志配置
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
-    
+
+    # LangGraph 工作流开关
+    USE_LANGGRAPH: bool = os.getenv("USE_LANGGRAPH", "false").lower() == "true"
+
     class Config:
         env_file = ".env"
 

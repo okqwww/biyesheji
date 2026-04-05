@@ -10,6 +10,8 @@ export function uploadPdfs(formData) {
   })
 }
 
+// ── Legacy 单独触发（USE_LANGGRAPH=false 时使用）─────────────────────────────
+
 /**
  * 触发 Agent 1 后台解析
  * @param {string} sessionId
@@ -90,4 +92,39 @@ export function startKg(sessionId) {
  */
 export function getKg(sessionId) {
   return http.get('/api/agent/kg/result', { params: { session_id: sessionId } })
+}
+
+// ── LangGraph Workflow（USE_LANGGRAPH=true 时使用）───────────────────────────
+
+/**
+ * 启动 LangGraph 完整工作流（parse → analyze → interrupt）
+ * @param {string} sessionId
+ */
+export function workflowStart(sessionId) {
+  return http.post('/api/agent/workflow/start', { session_id: sessionId })
+}
+
+/**
+ * 轮询 LangGraph 工作流状态
+ * @param {string} sessionId
+ */
+export function workflowStatus(sessionId) {
+  return http.get('/api/agent/workflow/status', { params: { session_id: sessionId } })
+}
+
+/**
+ * 从 interrupt 点恢复工作流（批准/拒绝题槽后调用）
+ * @param {string} sessionId
+ * @param {boolean} slotApproval  true=批准，false=拒绝
+ * @param {string} level  "small" | "medium" | "large"
+ * @param {Array|null} slotTemplate  编辑后的题槽列表
+ */
+export function workflowResume(sessionId, slotApproval, level = 'medium', slotTemplate = null) {
+  const body = {
+    session_id: sessionId,
+    slot_approval: slotApproval,
+    modification_level: level,
+  }
+  if (slotTemplate !== null) body.slot_template = slotTemplate
+  return http.post('/api/agent/workflow/resume', body)
 }

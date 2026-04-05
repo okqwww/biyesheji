@@ -12,6 +12,9 @@ agent.py — 多 Agent 出题系统 FastAPI 路由
   POST /api/agent/regenerate       单题反馈重新生成
   POST /api/agent/kg/start         触发 Agent 1.5 知识图谱提取
   GET  /api/agent/kg/result        轮询知识图谱提取结果
+  POST /api/agent/workflow/start   LangGraph 模式：启动完整工作流
+  GET  /api/agent/workflow/status  LangGraph 模式：查询工作流状态
+  POST /api/agent/workflow/resume  LangGraph 模式：中断点恢复继续
 """
 
 import asyncio
@@ -32,12 +35,29 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# LangGraph 工作流（条件导入，失败时优雅降级）
+USE_LANGGRAPH = settings.USE_LANGGRAPH
+_langgraph_workflow = None
+
+if USE_LANGGRAPH:
+    try:
+        from app.agents.graph import get_exam_workflow
+        _langgraph_workflow = get_exam_workflow()
+        logger.info("LangGraph 模式已启用")
+    except Exception as exc:
+        logger.warning("LangGraph 加载失败，USE_LANGGRAPH=true 但将降级为 legacy 模式: %s", exc)
+        USE_LANGGRAPH = False
+
 router = APIRouter(prefix="/agent", tags=["agent"])
 
 # ─────────────────────────────────────────────
 # 内存会话存储（开发阶段；生产可替换为 Redis/DB）
 # ─────────────────────────────────────────────
 sessions: dict[str, ExamState] = {}
+
+# LangGraph workflow 状态追踪（轻量，状态存 Checkpoint，状态字典仅用于快速轮询）
+# 结构: { session_id: { "status": "running"|"interrupted"|"done"|"error", "error": str|None } }
+_workflow_status: dict[str, dict] = {}
 
 
 # ─────────────────────────────────────────────
@@ -106,6 +126,39 @@ class KgStatusResponse(BaseModel):
     progress: Optional[dict] = None
     kg_nodes: Optional[list[dict]] = None
     kg_edges: Optional[list[dict]] = None
+
+
+# ─────────────────────────────────────────────
+# LangGraph Workflow 模型
+# ─────────────────────────────────────────────
+
+class WorkflowStartRequest(BaseModel):
+    session_id: str
+
+
+class WorkflowStartResponse(BaseModel):
+    session_id: str
+    status: str          # "running" | "interrupted" | "done" | "error"
+    message: str
+    slot_template: Optional[list[dict]] = None   # interrupt 时返回当前题槽
+    progress: Optional[dict] = None
+
+
+class WorkflowStatusResponse(BaseModel):
+    session_id: str
+    status: str          # "running" | "interrupted" | "done" | "error"
+    message: str
+    slot_template: Optional[list[dict]] = None
+    generated_questions: Optional[list[dict]] = None
+    progress: Optional[dict] = None
+    error: Optional[str] = None
+
+
+class WorkflowResumeRequest(BaseModel):
+    session_id: str
+    slot_approval: bool                           # True=批准, False=拒绝
+    slot_template: Optional[list[dict]] = None    # 可选：教师编辑后的题槽
+    modification_level: str = "medium"            # "small" / "medium" / "large"
 
 
 # ─────────────────────────────────────────────
@@ -261,6 +314,10 @@ async def upload_pdfs(files: list[UploadFile] = File(...)):
         kg_progress=None,
         kg_nodes=[],
         kg_edges=[],
+        # LangGraph 新增字段
+        last_completed_step=None,
+        interrupt_reason=None,
+        slot_approval=None,
     )
 
     return UploadResponse(
@@ -525,3 +582,222 @@ async def get_kg_result(session_id: str):
         kg_nodes=session.get("kg_nodes") if is_done else None,
         kg_edges=session.get("kg_edges") if is_done else None,
     )
+
+
+# ─────────────────────────────────────────────
+# LangGraph Workflow 路由（USE_LANGGRAPH=true 时启用）
+# ─────────────────────────────────────────────
+
+if USE_LANGGRAPH and _langgraph_workflow is not None:
+    from langgraph.types import Command
+
+    @router.post("/workflow/start", response_model=WorkflowStartResponse)
+    async def workflow_start(request: WorkflowStartRequest):
+        """
+        启动 LangGraph 完整工作流（不走任何 legacy 路径）。
+
+        执行 parse → analyze → interrupt（等待题槽确认），
+        在 interrupt 处暂停，直接返回当前状态和 slot_template。
+        前端确认后调用 /workflow/resume 继续。
+        """
+        session = _get_session_or_404(request.session_id)
+        sid = request.session_id
+
+        # 防止重复启动
+        current_wf_status = _workflow_status.get(sid, {}).get("status")
+        if current_wf_status in ("running", "interrupted"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"该会话的工作流已在运行中（status={current_wf_status}），请先调用 /workflow/resume 或等待完成。",
+            )
+
+        wf = _langgraph_workflow
+        config = {"configurable": {"thread_id": sid}}
+        _workflow_status[sid] = {"status": "running", "error": None}
+
+        try:
+            # async for 驱动 astream：interrupt() 表现为事件 {'__interrupt__': ...}，
+            # astream 不会抛异常，正常迭代完毕后结束。
+            async for event in wf.astream(session, config):
+                if not event:
+                    continue
+
+                # 检测 interrupt 事件（interrupt() 在 node 内被调用时，
+                # LangGraph 将检查点保存后把 __interrupt__ 作为事件 yield 出来，
+                # stream 不中断，迭代完毕后正常结束。）
+                if "__interrupt__" in event:
+                    logger.info("[workflow] interrupt detected, pausing at checkpoint")
+                    _workflow_status[sid] = {"status": "interrupted", "error": None}
+                    return WorkflowStartResponse(
+                        session_id=sid,
+                        status="interrupted",
+                        message="工作流已暂停，请确认题槽后调用 /workflow/resume 继续。",
+                        slot_template=sessions[sid].get("slot_template", []),
+                        progress={
+                            "parse_status": sessions[sid]["parse_status"],
+                            "analyze_status": sessions[sid]["analyze_status"],
+                        },
+                    )
+
+                node_name = list(event.keys())[0]
+                node_output = event[node_name]
+                logger.info("[workflow] node=%s completed", node_name)
+
+                if isinstance(node_output, dict):
+                    sessions[sid].update(node_output)
+
+                _workflow_status[sid] = {"status": "running", "error": None}
+
+            # 能走到这里说明 astream 正常结束（无 interrupt）
+            _workflow_status[sid] = {"status": "done", "error": None}
+            sessions[sid]["generate_status"] = "done"
+            return WorkflowStartResponse(
+                session_id=sid,
+                status="done",
+                message="工作流已完成",
+                generated_questions=sessions[sid].get("generated_questions"),
+                progress={"parse_status": sessions[sid]["parse_status"],
+                         "analyze_status": sessions[sid]["analyze_status"],
+                         "generate_status": sessions[sid]["generate_status"]},
+            )
+
+        except Exception as exc:
+            error_str = str(exc)
+            logger.exception("[workflow] 工作流执行出错 session_id=%s", sid)
+            _workflow_status[sid] = {"status": "error", "error": error_str}
+            return WorkflowStartResponse(
+                session_id=sid,
+                status="error",
+                message=f"工作流执行出错: {error_str}",
+                progress={"error_detail": error_str},
+            )
+
+    @router.get("/workflow/status", response_model=WorkflowStatusResponse)
+    async def workflow_status(session_id: str):
+        """
+        查询 LangGraph 工作流当前状态。
+
+        - "running"：parse/analyze 阶段执行中
+        - "interrupted"：到达题槽确认点，已暂停
+        - "done"：完整工作流已完成
+        - "error"：执行出错
+        """
+        _get_session_or_404(session_id)
+
+        status_info = _workflow_status.get(session_id, {})
+        wf_status = status_info.get("status", "unknown")
+        wf_error = status_info.get("error")
+
+        session = sessions[session_id]
+
+        # 安全兜底：如果 _workflow_status 仍为 running，但 analyze 已完成且 generate 未开始，
+        # 说明工作流可能卡在 interrupt 点未被正确捕获（极边缘情况）
+        if wf_status == "running" and session.get("analyze_status") == "done" and session.get("generate_status") in ("pending", None):
+            wf_status = "interrupted"
+
+        message_map = {
+            "running": "工作流执行中（parse 或 analyze 阶段）",
+            "interrupted": "工作流已暂停，请确认题槽后调用 /workflow/resume 继续",
+            "done": "工作流已完成",
+            "error": f"工作流出错: {wf_error}",
+            "unknown": "状态未知，请先调用 /workflow/start",
+        }
+
+        return WorkflowStatusResponse(
+            session_id=session_id,
+            status=wf_status,
+            message=message_map.get(wf_status, wf_status),
+            slot_template=session.get("slot_template") if wf_status == "interrupted" else None,
+            generated_questions=session.get("generated_questions") if wf_status == "done" else None,
+            progress={
+                "parse_status": session.get("parse_status"),
+                "analyze_status": session.get("analyze_status"),
+                "generate_status": session.get("generate_status"),
+                "kg_status": session.get("kg_status"),
+            },
+            error=wf_error,
+        )
+
+    @router.post("/workflow/resume", response_model=WorkflowStatusResponse)
+    async def workflow_resume(request: WorkflowResumeRequest):
+        """
+        从 interrupt 点恢复工作流（不走任何 legacy 路径）。
+
+        - slot_approval=True：批准题槽，Command(resume=True) 继续执行 generate → kg_extract
+        - slot_approval=False：拒绝，终止工作流
+        - 可传入编辑后的 slot_template 和 modification_level
+        """
+        session = _get_session_or_404(request.session_id)
+        sid = request.session_id
+        status_info = _workflow_status.get(sid, {})
+        wf_status = status_info.get("status", "unknown")
+
+        if wf_status not in ("interrupted", "running"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"工作流当前状态为 {wf_status}，无法 resume（必须先 /workflow/start）",
+            )
+
+        # 写入 session（checkpoint 恢复时会用到）
+        sessions[sid]["slot_approval"] = request.slot_approval
+        if request.slot_template is not None:
+            sessions[sid]["slot_template"] = request.slot_template
+        sessions[sid]["modification_level"] = request.modification_level
+
+        if not request.slot_approval:
+            # 拒绝，干净终止（不传 Command，让 workflow 自然结束）
+            _workflow_status[sid] = {"status": "done", "error": None}
+            return WorkflowStatusResponse(
+                session_id=sid,
+                status="done",
+                message="教师拒绝，终止工作流",
+                progress={"slot_approval": False},
+            )
+
+        # 批准：Command(resume=True) 传入 interrupt 的 resume 参数，
+        # 令 node_wait_slots 中的 interrupt() 接受到 True 并正常返回，
+        # 工作流继续执行 generate → kg_extract。
+        _workflow_status[sid] = {"status": "running", "error": None}
+        config = {"configurable": {"thread_id": sid}}
+
+        try:
+            async for event in _langgraph_workflow.astream(
+                Command(resume=request.slot_approval),
+                config,
+            ):
+                if "__interrupt__" in event:
+                    # 理论上 resume 后不应该再遇到 interrupt（因为 slot_approval=True）
+                    _workflow_status[sid] = {"status": "interrupted", "error": None}
+                    return WorkflowStatusResponse(
+                        session_id=sid,
+                        status="interrupted",
+                        message="异常：resume 后再次遇到中断点",
+                    )
+
+                node_name = list(event.keys())[0]
+                node_output = event[node_name]
+                logger.info("[workflow resume] node=%s completed", node_name)
+                if isinstance(node_output, dict):
+                    sessions[sid].update(node_output)
+
+            # astream 正常结束
+            _workflow_status[sid] = {"status": "done", "error": None}
+            sessions[sid]["generate_status"] = "done"
+            return WorkflowStatusResponse(
+                session_id=sid,
+                status="done",
+                message="全部完成",
+                generated_questions=sessions[sid].get("generated_questions"),
+                progress={"generate_status": "done", "kg_status": sessions[sid].get("kg_status")},
+            )
+
+        except Exception as exc:
+            error_str = str(exc)
+            logger.exception("[workflow resume] 工作流执行出错 session_id=%s", sid)
+            _workflow_status[sid] = {"status": "error", "error": error_str}
+            return WorkflowStatusResponse(
+                session_id=sid,
+                status="error",
+                message=f"工作流执行出错: {error_str}",
+                error=error_str,
+            )

@@ -3,13 +3,13 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAgentStore } from '../stores/agent'
-import { getParsed, startAnalyze, getAnalyzed } from '../api/agent'
+import { workflowStatus } from '../api/agent'
 
 const router = useRouter()
 const store = useAgentStore()
 
-const phase = ref('parsing')
-const statusText = ref('正在调用视觉大模型解析 PDF 页面...')
+const phase = ref('parsing')  // 'parsing' | 'analyzing' | 'done' | 'error'
+const statusText = ref('正在解析 PDF 并分析题槽结构...')
 const detail = ref('')
 const percentage = ref(10)
 const errorMsg = ref('')
@@ -22,77 +22,73 @@ onMounted(() => {
     router.replace('/agent/upload')
     return
   }
-  startPollingParse()
+  startPolling()
 })
 
 onUnmounted(() => {
   clearInterval(timer)
 })
 
-function startPollingParse() {
-  phase.value = 'parsing'
-  statusText.value = '正在调用视觉大模型解析 PDF 页面...'
+function startPolling() {
+  statusText.value = '正在解析 PDF 并分析题槽结构...'
   percentage.value = 15
 
   timer = setInterval(async () => {
     try {
-      const res = await getParsed(store.sessionId)
+      const res = await workflowStatus(store.sessionId)
       const prog = res.progress || {}
 
-      if (prog.current != null && prog.total != null) {
-        detail.value = `已解析 ${prog.current} / ${prog.total} 页`
-        percentage.value = Math.min(10 + Math.round((prog.current / prog.total) * 45), 55)
+      // 根据 parse/analyze 进度更新文字和进度条
+      if (prog.parse_status === 'parsing') {
+        phase.value = 'parsing'
+        statusText.value = '正在调用视觉大模型解析 PDF 页面...'
+        if (prog.parse_progress?.current != null && prog.parse_progress?.total != null) {
+          detail.value = `已解析 ${prog.parse_progress.current} / ${prog.parse_progress.total} 页`
+          percentage.value = Math.min(10 + Math.round((prog.parse_progress.current / prog.parse_progress.total) * 35), 45)
+        }
+      } else if (prog.analyze_status === 'analyzing') {
+        phase.value = 'analyzing'
+        statusText.value = '正在分析题槽结构与历年出题规律...'
+        if (prog.analyze_progress?.slots_found != null) {
+          detail.value = `已识别 ${prog.analyze_progress.slots_found} 个题槽`
+          percentage.value = Math.min(45 + prog.analyze_progress.slots_found * 3, 80)
+        } else {
+          percentage.value = 50
+        }
       }
 
-      if (res.status === 'done') {
-        clearInterval(timer)
-        store.parsedExams = res.parsed_exams || []
-        percentage.value = 55
-        detail.value = `解析完成，共 ${store.parsedExams.length} 份试卷`
-        await triggerAnalyze()
-      } else if (res.status === 'error') {
-        clearInterval(timer)
-        setError(prog.error || '解析失败')
-      }
-    } catch {
-      // http.js already shows error
-    }
-  }, 3000)
-}
-
-async function triggerAnalyze() {
-  try {
-    await startAnalyze(store.sessionId)
-  } catch {
-    return
-  }
-
-  phase.value = 'analyzing'
-  statusText.value = '正在分析题槽结构与历年出题规律...'
-  percentage.value = 60
-
-  timer = setInterval(async () => {
-    try {
-      const res = await getAnalyzed(store.sessionId)
-      const prog = res.progress || {}
-
-      if (prog.slots_found != null) {
-        detail.value = `已识别 ${prog.slots_found} 个题槽`
-        percentage.value = Math.min(60 + prog.slots_found * 2, 90)
-      }
-
-      if (res.status === 'done') {
+      // 工作流中断（到了题槽确认点）
+      if (res.status === 'interrupted') {
         clearInterval(timer)
         store.slotTemplate = res.slot_template || []
         store.analyzing = false
-        percentage.value = 100
+        percentage.value = 90
         phase.value = 'done'
-        statusText.value = `分析完成，共识别 ${store.slotTemplate.length} 个题槽`
+        statusText.value = `题槽分析完成，共 ${store.slotTemplate.length} 个题槽`
         detail.value = '即将跳转到题槽确认页面...'
         setTimeout(() => router.push('/agent/slots'), 1200)
-      } else if (res.status === 'error') {
+        return
+      }
+
+      // 工作流正常结束（无 interrupt，全部自动完成）
+      if (res.status === 'done') {
         clearInterval(timer)
-        setError(prog.error || '题槽分析失败')
+        store.slotTemplate = res.slot_template || []
+        store.generatedQuestions = res.generated_questions || []
+        phase.value = 'done'
+        percentage.value = 100
+        statusText.value = '处理完成'
+        detail.value = '即将跳转到试卷草稿...'
+        setTimeout(() => router.push('/agent/draft'), 1200)
+        return
+      }
+
+      // 出错
+      if (res.status === 'error') {
+        clearInterval(timer)
+        phase.value = 'error'
+        errorMsg.value = res.error || prog.error || '工作流执行出错'
+        percentage.value = 0
       }
     } catch {
       // http.js already shows error
@@ -133,8 +129,7 @@ function retry() {
 
           <div class="card-titles">
             <h1 class="card-title">
-              <span v-if="phase === 'parsing'">解析往年题中</span>
-              <span v-else-if="phase === 'analyzing'">分析题槽结构中</span>
+              <span v-if="phase === 'parsing' || phase === 'analyzing'">解析往年题中</span>
               <span v-else-if="phase === 'done'">处理完成</span>
               <span v-else>处理失败</span>
             </h1>

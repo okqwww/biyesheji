@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAgentStore } from '../stores/agent'
-import { uploadPdfs, startParse } from '../api/agent'
+import { uploadPdfs, workflowStart } from '../api/agent'
 
 const router = useRouter()
 const store = useAgentStore()
@@ -45,7 +45,8 @@ async function submit() {
     const res = await uploadPdfs(formData)
     store.sessionId = res.session_id
 
-    await startParse(res.session_id)
+    // 调用 LangGraph workflow：parse → analyze → interrupt
+    await workflowStart(res.session_id)
     store.parsing = true
 
     router.push('/agent/parsing')

@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAgentStore } from '../stores/agent'
-import { startGenerate } from '../api/agent'
+import { workflowResume } from '../api/agent'
 import LatexRenderer from '../components/LatexRenderer.vue'
 
 const router = useRouter()
@@ -45,10 +45,11 @@ function removeKf(slot, kf) {
 
 async function generate() {
   store.modificationLevel = modLevel.value
-  store.slotTemplate = JSON.parse(JSON.stringify(editableSlots.value))
+  const confirmedSlots = JSON.parse(JSON.stringify(editableSlots.value))
   starting.value = true
   try {
-    await startGenerate(store.sessionId, modLevel.value, editableSlots.value)
+    // 调用 workflow/resume 批准题槽，继续 generate → kg_extract
+    await workflowResume(store.sessionId, true, modLevel.value, confirmedSlots)
     store.generating = true
     router.push('/agent/draft')
   } catch {

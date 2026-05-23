@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术风格架构图 - 经典方框</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "SimSun", "Times New Roman", serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .figure {
+            width: 680px;
+        }
+
+        .figure-number {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .figure-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* 层级 */
+        .tier {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .tier-label {
+            width: 70px;
+            font-size: 11px;
+            color: #333;
+            text-align: right;
+            padding-right: 10px;
+            border-right: 1px solid #333;
+        }
+
+        .tier-content {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* 节点方框 */
+        .box {
+            padding: 12px 20px;
+            border: 1px solid #000;
+            background: #fff;
+            text-align: center;
+        }
+
+        .box-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 3px;
+        }
+
+        .box-content {
+            font-size: 9px;
+            color: #555;
+        }
+
+        /* 连接线 */
+        .arrow-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .arrow-spacer {
+            width: 70px;
+        }
+
+        .arrow-line {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .arrow-line hr {
+            flex: 1;
+            max-width: 150px;
+            border: none;
+            border-top: 1px solid #000;
+        }
+
+        .arrow-line span {
+            font-size: 8px;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        /* 图例 */
+        .legend {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            font-size: 10px;
+            color: #555;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-box {
+            width: 14px;
+            height: 10px;
+            border: 1px solid #000;
+        }
+
+        /* 底部说明 */
+        .caption {
+            margin-top: 15px;
+            font-size: 9px;
+            color: #777;
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="figure">
+        <div class="figure-number">图 2-1</div>
+        <div class="figure-title">系统总体架构图</div>
+
+        <div class="diagram">
+            <!-- 表现层 -->
+            <div class="tier">
+                <div class="tier-label">表现层</div>
+                <div class="tier-content">
+                    <div class="box">
+                        <div class="box-title">Vue 3</div>
+                        <div class="box-content">Element Plus + ECharts + Axios</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 箭头1 -->
+            <div class="arrow-row">
+                <div class="arrow-spacer"></div>
+                <div class="arrow-line">
+                    <hr>
+                    <span>HTTP/REST</span>
+                    <hr>
+                </div>
+            </div>
+
+            <!-- 应用层 -->
+            <div class="tier">
+                <div class="tier-label">应用层</div>
+                <div class="tier-content">
+                    <div class="box">
+                        <div class="box-title">FastAPI</div>
+                        <div class="box-content">Python 3.10+ / Uvicorn</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 箭头2 -->
+            <div class="arrow-row">
+                <div class="arrow-spacer"></div>
+                <div class="arrow-line">
+                    <hr>
+                    <span>Cypher / API调用</span>
+                    <hr>
+                </div>
+            </div>
+
+            <!-- 数据层/服务层 -->
+            <div class="tier">
+                <div class="tier-label">数据层<br>服务层</div>
+                <div class="tier-content">
+                    <div class="box">
+                        <div class="box-title">Neo4j</div>
+                        <div class="box-content">知识图谱·题目存储</div>
+                    </div>
+                    <div class="box">
+                        <div class="box-title">DeepSeek API</div>
+                        <div class="box-content">智能题目生成</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图例 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>前端服务</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>后端服务</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>数据存储</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>外部API</span>
+            </div>
+        </div>
+
+        <!-- 说明 -->
+        <div class="caption">
+            说明：本系统采用分层架构设计，表现层使用Vue 3构建前端应用，应用层基于FastAPI提供RESTful接口，<br>
+            数据层采用Neo4j图数据库存储知识图谱，DeepSeek API提供智能题目生成能力。
+        </div>
+    </div>
+</body>
+</html>

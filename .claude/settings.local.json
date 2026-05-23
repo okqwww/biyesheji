@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./.venv/Scripts/python.exe -c \"import langgraph; print\\(langgraph.__version__\\)\")"
+      "Bash(./.venv/Scripts/python.exe -c \"import langgraph; print\\(langgraph.__version__\\)\")",
+      "Bash(npm install:*)",
+      "Bash(npm config:*)",
+      "Bash(node -e ':*)"
     ]
   }
 }

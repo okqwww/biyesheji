@@ -128,3 +128,10 @@ export function workflowResume(sessionId, slotApproval, level = 'medium', slotTe
   if (slotTemplate !== null) body.slot_template = slotTemplate
   return http.post('/api/agent/workflow/resume', body)
 }
+
+/**
+ * 获取 LangGraph 工作流的 Mermaid 图定义
+ */
+export function workflowGraph() {
+  return http.get('/api/agent/workflow/graph')
+}

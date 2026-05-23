@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术风格架构图</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimSun", sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .canvas {
+            position: relative;
+            width: 800px;
+            height: 520px;
+            background: #ffffff;
+            border: 1px solid #ddd;
+        }
+
+        /* 标题 */
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            letter-spacing: 2px;
+        }
+
+        /* 分层标签 */
+        .layer-label {
+            position: absolute;
+            left: 20px;
+            font-size: 11px;
+            color: #666;
+            border-left: 2px solid #333;
+            padding-left: 8px;
+        }
+
+        .layer-1 { top: 80px; }
+        .layer-2 { top: 230px; }
+        .layer-3 { top: 380px; }
+
+        /* 节点方框 */
+        .node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+            background: #fff;
+        }
+
+        .node-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .node-desc {
+            font-size: 10px;
+            color: #666;
+        }
+
+        /* Frontend */
+        .node-frontend {
+            width: 200px;
+            height: 70px;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Backend */
+        .node-backend {
+            width: 200px;
+            height: 70px;
+            top: 230px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Database */
+        .node-database {
+            width: 180px;
+            height: 65px;
+            top: 380px;
+            left: 250px;
+        }
+
+        /* API */
+        .node-api {
+            width: 180px;
+            height: 65px;
+            top: 380px;
+            right: 250px;
+        }
+
+        /* 连接线 */
+        .line {
+            position: absolute;
+            background: #333;
+        }
+
+        .line-1 {
+            width: 1px;
+            height: 30px;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .line-2 {
+            width: 1px;
+            height: 30px;
+            top: 300px;
+            left: calc(50% - 50px);
+        }
+
+        .line-3 {
+            width: 1px;
+            height: 30px;
+            top: 300px;
+            left: calc(50% + 50px);
+        }
+
+        .line-4 {
+            height: 1px;
+            top: 445px;
+            left: 330px;
+            right: 330px;
+        }
+
+        /* 箭头 */
+        .arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #333;
+        }
+
+        .arrow-1 { top: 182px; left: calc(50% - 5px); }
+        .arrow-2 { top: 332px; left: calc(50% - 5px); }
+
+        /* 连线标签 */
+        .line-label {
+            position: absolute;
+            font-size: 9px;
+            color: #666;
+            background: #fff;
+            padding: 2px 6px;
+        }
+
+        .line-label-1 { top: 165px; left: 50%; transform: translateX(-50%); }
+        .line-label-2 { top: 315px; left: calc(50% - 70px); }
+        .line-label-3 { top: 315px; right: calc(50% - 70px); }
+
+        /* 底部图例 */
+        .legend {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-box {
+            width: 12px;
+            height: 8px;
+            border: 1px solid #333;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="title">图 2-1 系统总体架构图</div>
+
+        <!-- 分层标签 -->
+        <div class="layer-label layer-1">表现层</div>
+        <div class="layer-label layer-2">应用层</div>
+        <div class="layer-label layer-3">数据层 / 服务层</div>
+
+        <!-- 连接线 -->
+        <div class="line line-1"></div>
+        <div class="line line-2"></div>
+        <div class="line line-3"></div>
+        <div class="line line-4"></div>
+
+        <!-- 箭头 -->
+        <div class="arrow arrow-1"></div>
+        <div class="arrow arrow-2"></div>
+
+        <!-- 连线标签 -->
+        <div class="line-label line-label-1">HTTP/REST</div>
+        <div class="line-label line-label-2">Cypher</div>
+        <div class="line-label line-label-3">API调用</div>
+
+        <!-- 节点 -->
+        <div class="node node-frontend">
+            <div class="node-title">Vue 3</div>
+            <div class="node-desc">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-title">FastAPI</div>
+            <div class="node-desc">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-title">Neo4j</div>
+            <div class="node-desc">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-title">DeepSeek API</div>
+            <div class="node-desc">智能题目生成</div>
+        </div>
+
+        <!-- 图例 -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>前端</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>后端</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>数据库</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box"></div>
+                <span>AI服务</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

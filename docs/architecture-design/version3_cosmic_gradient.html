@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Gradient - Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0a0a12;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated aurora background */
+        .aurora {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(20, 184, 166, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+            animation: auroraMove 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes auroraMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-1deg); }
+        }
+
+        /* Stars */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.3), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.2), transparent),
+                radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.3), transparent);
+            background-size: 200px 200px;
+            animation: twinkle 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .canvas {
+            position: relative;
+            width: 950px;
+            height: 620px;
+            background: linear-gradient(180deg, rgba(15, 15, 25, 0.9) 0%, rgba(10, 10, 18, 0.95) 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow:
+                0 0 80px rgba(99, 102, 241, 0.1),
+                0 30px 60px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        /* Glowing orbs behind nodes */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.4;
+            animation: pulse 6s ease-in-out infinite;
+        }
+
+        .glow-frontend {
+            width: 200px;
+            height: 120px;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+        }
+
+        .glow-backend {
+            width: 200px;
+            height: 120px;
+            top: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(180deg, #8b5cf6, #6d28d9);
+        }
+
+        .glow-database {
+            width: 180px;
+            height: 100px;
+            top: 370px;
+            left: 260px;
+            background: linear-gradient(180deg, #14b8a6, #0d9488);
+        }
+
+        .glow-api {
+            width: 180px;
+            height: 100px;
+            top: 370px;
+            right: 260px;
+            background: linear-gradient(180deg, #f59e0b, #d97706);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.5; transform: translateX(-50%) scale(1.05); }
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s ease;
+        }
+
+        .node:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        .node-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .node-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .node-subtitle {
+            font-size: 11px;
+            opacity: 0.7;
+            letter-spacing: 0.5px;
+        }
+
+        /* Frontend */
+        .node-frontend {
+            width: 180px;
+            height: 110px;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .node-frontend .node-icon { color: #60a5fa; }
+        .node-frontend .node-title { color: #60a5fa; }
+        .node-frontend .node-subtitle { color: rgba(96, 165, 250, 0.7); }
+
+        /* Backend */
+        .node-backend {
+            width: 180px;
+            height: 110px;
+            top: 230px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .node-backend .node-icon { color: #a78bfa; }
+        .node-backend .node-title { color: #a78bfa; }
+        .node-backend .node-subtitle { color: rgba(167, 139, 250, 0.7); }
+
+        /* Database */
+        .node-database {
+            width: 170px;
+            height: 100px;
+            top: 380px;
+            left: 280px;
+            background: rgba(20, 184, 166, 0.15);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+        }
+        .node-database .node-icon { color: #2dd4bf; }
+        .node-database .node-title { color: #2dd4bf; }
+        .node-database .node-subtitle { color: rgba(45, 212, 191, 0.7); }
+
+        /* API */
+        .node-api {
+            width: 170px;
+            height: 100px;
+            top: 380px;
+            right: 280px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .node-api .node-icon { color: #fbbf24; }
+        .node-api .node-title { color: #fbbf24; }
+        .node-api .node-subtitle { color: rgba(251, 191, 36, 0.7); }
+
+        /* Connection beams */
+        .beam {
+            position: absolute;
+            height: 2px;
+            transform-origin: left center;
+            opacity: 0.4;
+        }
+
+        .beam-1 {
+            width: 60px;
+            top: 195px;
+            left: calc(50% - 30px);
+            background: linear-gradient(90deg, transparent, #60a5fa);
+            animation: beamPulse 3s ease-in-out infinite;
+        }
+
+        .beam-2 {
+            width: 60px;
+            top: 345px;
+            left: calc(50% - 120px);
+            background: linear-gradient(90deg, transparent, #2dd4bf);
+            animation: beamPulse 3s ease-in-out infinite 0.3s;
+        }
+
+        .beam-3 {
+            width: 60px;
+            top: 345px;
+            right: calc(50% - 120px);
+            background: linear-gradient(270deg, transparent, #fbbf24);
+            animation: beamPulse 3s ease-in-out infinite 0.6s;
+        }
+
+        @keyframes beamPulse {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Data particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: particleFlow 3s ease-in-out infinite;
+        }
+
+        .particle-1 {
+            background: #60a5fa;
+            top: 190px;
+            left: 50%;
+        }
+
+        .particle-2 {
+            background: #2dd4bf;
+            top: 340px;
+            left: calc(50% - 90px);
+        }
+
+        .particle-3 {
+            background: #fbbf24;
+            top: 340px;
+            right: calc(50% - 90px);
+        }
+
+        @keyframes particleFlow {
+            0% { opacity: 0; transform: translateY(-10px); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* Labels */
+        .label {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+        }
+
+        .label-1 {
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        .label-2 {
+            top: 350px;
+            left: calc(50% - 60px);
+            background: rgba(45, 212, 191, 0.2);
+            color: #2dd4bf;
+            border: 1px solid rgba(45, 212, 191, 0.3);
+        }
+
+        .label-3 {
+            top: 350px;
+            right: calc(50% - 60px);
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        /* Title */
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+        }
+
+        .legend-bar {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .legend-frontend .legend-bar { background: #3b82f6; }
+        .legend-backend .legend-bar { background: #8b5cf6; }
+        .legend-database .legend-bar { background: #14b8a6; }
+        .legend-api .legend-bar { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="aurora"></div>
+    <div class="stars"></div>
+
+    <div class="canvas">
+        <div class="title">System Architecture</div>
+
+        <!-- Glow orbs -->
+        <div class="glow-orb glow-frontend"></div>
+        <div class="glow-orb glow-backend"></div>
+        <div class="glow-orb glow-database"></div>
+        <div class="glow-orb glow-api"></div>
+
+        <!-- Beams -->
+        <div class="beam beam-1"></div>
+        <div class="beam beam-2"></div>
+        <div class="beam beam-3"></div>
+
+        <!-- Particles -->
+        <div class="particle particle-1"></div>
+        <div class="particle particle-2"></div>
+        <div class="particle particle-3"></div>
+
+        <!-- Labels -->
+        <div class="label label-1">REST API</div>
+        <div class="label label-2">Cypher</div>
+        <div class="label label-3">LLM Call</div>
+
+        <!-- Nodes -->
+        <div class="node node-frontend">
+            <div class="node-icon">◈</div>
+            <div class="node-title">Vue 3</div>
+            <div class="node-subtitle">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-icon">◇</div>
+            <div class="node-title">FastAPI</div>
+            <div class="node-subtitle">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-icon">◆</div>
+            <div class="node-title">Neo4j</div>
+            <div class="node-subtitle">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-icon">●</div>
+            <div class="node-title">DeepSeek API</div>
+            <div class="node-subtitle">智能题目生成</div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item legend-frontend">
+                <div class="legend-bar"></div>
+                <span>Frontend</span>
+            </div>
+            <div class="legend-item legend-backend">
+                <div class="legend-bar"></div>
+                <span>Backend</span>
+            </div>
+            <div class="legend-item legend-database">
+                <div class="legend-bar"></div>
+                <span>Database</span>
+            </div>
+            <div class="legend-item legend-api">
+                <div class="legend-bar"></div>
+                <span>AI Service</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

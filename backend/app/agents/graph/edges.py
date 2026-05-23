@@ -22,25 +22,38 @@ from typing import Literal, Annotated
 from app.agents.state import ExamState
 
 
-def should_analyze(state: ExamState) -> Literal["analyze", "__end__"]:
+def should_parse_continue(state: ExamState) -> Literal["analyze", "__end__"]:
     """
     边条件：parse 完成后决定是否进入 analyze。
     - parse_status == "done" → 继续 analyze
-    - 否则 → 终止
+    - parse_status == "error" → 终止（出错）
+    - 其他（pending/parsing）→ 异常，终止
     """
     if state.get("parse_status") == "done":
         return "analyze"
     return "__end__"
 
 
-def should_wait_slots(state: ExamState) -> Literal["wait_slots", "__end__"]:
+def should_analyze_continue(state: ExamState) -> Literal["wait_slots", "__end__"]:
     """
     边条件：analyze 完成后决定是否进入中断确认。
     - analyze_status == "done" → 进入 wait_slots（interrupt）
-    - 否则 → 终止
+    - 否则（error/pending）→ 终止
     """
     if state.get("analyze_status") == "done":
         return "wait_slots"
+    return "__end__"
+
+
+def should_generate_continue(state: ExamState) -> Literal["kg_extract", "__end__"]:
+    """
+    边条件：generate 完成后决定是否提取知识图谱。
+    - generate_status == "done" → 继续 kg_extract
+    - generate_status == "error" → 终止（出错）
+    - 其他 → 终止
+    """
+    if state.get("generate_status") == "done":
+        return "kg_extract"
     return "__end__"
 
 

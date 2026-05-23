@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swiss Minimal - Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Instrument Sans', sans-serif;
+            background: #f5f5f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .canvas {
+            position: relative;
+            width: 1000px;
+            height: 650px;
+            background: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* Grid lines */
+        .canvas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 80px;
+            right: 0;
+            bottom: 0;
+            background-image: linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
+            background-size: 80px 100%;
+            pointer-events: none;
+        }
+
+        /* Top bar */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+        }
+
+        .brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+            letter-spacing: 1px;
+        }
+
+        .project-name {
+            margin-left: 40px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Left sidebar numbers */
+        .sidebar {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 80px;
+            bottom: 0;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+
+        .layer-num {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.15);
+            margin-bottom: 80px;
+        }
+
+        .layer-num.active {
+            color: #ff6b35;
+        }
+
+        /* Layer labels */
+        .layer-label {
+            position: absolute;
+            left: 110px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #999;
+        }
+
+        .label-1 { top: 120px; }
+        .label-2 { top: 270px; }
+        .label-3 { top: 420px; }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            background: #ffffff;
+            border: 2px solid #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 25px;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .node-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .node-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .node-subtitle {
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 0.5px;
+        }
+
+        /* Frontend */
+        .node-frontend {
+            width: 220px;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-color: #2563eb;
+        }
+
+        .node-frontend .node-title {
+            color: #2563eb;
+        }
+
+        /* Backend */
+        .node-backend {
+            width: 220px;
+            top: 230px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-color: #7c3aed;
+        }
+
+        .node-backend .node-title {
+            color: #7c3aed;
+        }
+
+        /* Database - Left */
+        .node-database {
+            width: 200px;
+            top: 380px;
+            left: 200px;
+            border-color: #059669;
+        }
+
+        .node-database .node-title {
+            color: #059669;
+        }
+
+        /* API - Right */
+        .node-api {
+            width: 200px;
+            top: 380px;
+            right: 200px;
+            border-color: #dc2626;
+        }
+
+        .node-api .node-title {
+            color: #dc2626;
+        }
+
+        /* Connection lines */
+        .connection {
+            position: absolute;
+            background: #1a1a1a;
+        }
+
+        .conn-1 {
+            width: 2px;
+            height: 70px;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .conn-2 {
+            width: 2px;
+            height: 70px;
+            top: 330px;
+            left: calc(50% - 110px);
+        }
+
+        .conn-3 {
+            width: 2px;
+            height: 70px;
+            top: 330px;
+            left: calc(50% + 110px);
+        }
+
+        /* Horizontal connector */
+        .conn-horizontal {
+            height: 2px;
+            top: 455px;
+            left: 290px;
+            right: 290px;
+        }
+
+        /* Arrow markers */
+        .arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #1a1a1a;
+        }
+
+        .arrow-1 {
+            top: 252px;
+            left: calc(50% - 6px);
+        }
+
+        .arrow-2 {
+            top: 402px;
+            left: calc(50% - 6px);
+        }
+
+        /* Connection labels */
+        .conn-label {
+            position: absolute;
+            font-size: 9px;
+            font-weight: 500;
+            color: #999;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: #fff;
+            padding: 2px 8px;
+        }
+
+        .label-a {
+            top: 215px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .label-b {
+            top: 365px;
+            left: calc(50% - 160px);
+        }
+
+        .label-c {
+            top: 365px;
+            left: calc(50% + 130px);
+        }
+
+        /* Bottom info */
+        .bottom-info {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #999;
+            letter-spacing: 1px;
+        }
+
+        .info-left {
+            display: flex;
+            gap: 30px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-dot {
+            width: 8px;
+            height: 8px;
+        }
+
+        .dot-frontend { background: #2563eb; }
+        .dot-backend { background: #7c3aed; }
+        .dot-database { background: #059669; }
+        .dot-api { background: #dc2626; }
+
+        /* Title */
+        .main-title {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            color: #f0f0f0;
+            letter-spacing: -2px;
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <!-- Top bar -->
+        <div class="top-bar">
+            <div class="brand">INTELLIGENT EXAM</div>
+            <div class="project-name">毕业设计 · 智能题目生成系统</div>
+        </div>
+
+        <!-- Sidebar with layer numbers -->
+        <div class="sidebar">
+            <div class="layer-num active">01</div>
+            <div class="layer-num">02</div>
+            <div class="layer-num">03</div>
+        </div>
+
+        <!-- Layer labels -->
+        <div class="layer-label label-1">Presentation Layer</div>
+        <div class="layer-label label-2">Application Layer</div>
+        <div class="layer-label label-3">Data & Service Layer</div>
+
+        <!-- Connection lines -->
+        <div class="connection conn-1"></div>
+        <div class="connection conn-2"></div>
+        <div class="connection conn-3"></div>
+        <div class="connection conn-horizontal"></div>
+
+        <!-- Arrows -->
+        <div class="arrow arrow-1"></div>
+        <div class="arrow arrow-2"></div>
+
+        <!-- Connection labels -->
+        <div class="conn-label label-a">REST API</div>
+        <div class="conn-label label-b">Query</div>
+        <div class="conn-label label-c">LLM Call</div>
+
+        <!-- Nodes -->
+        <div class="node node-frontend">
+            <div class="node-icon">▣</div>
+            <div class="node-title">Vue 3</div>
+            <div class="node-subtitle">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-icon">◇</div>
+            <div class="node-title">FastAPI</div>
+            <div class="node-subtitle">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-icon">◆</div>
+            <div class="node-title">Neo4j</div>
+            <div class="node-subtitle">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-icon">●</div>
+            <div class="node-title">DeepSeek API</div>
+            <div class="node-subtitle">智能题目生成</div>
+        </div>
+
+        <!-- Background title -->
+        <div class="main-title">ARCHITECTURE</div>
+
+        <!-- Bottom info -->
+        <div class="bottom-info">
+            <div class="info-left">
+                <div class="info-item">
+                    <div class="info-dot dot-frontend"></div>
+                    <span>Frontend</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-dot dot-backend"></div>
+                    <span>Backend</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-dot dot-database"></div>
+                    <span>Database</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-dot dot-api"></div>
+                    <span>AI Service</span>
+                </div>
+            </div>
+            <div class="info-right">SCALE 1:100</div>
+        </div>
+    </div>
+</body>
+</html>

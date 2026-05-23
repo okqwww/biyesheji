@@ -41,29 +41,32 @@ def _build_graph() -> StateGraph:
     # 设置入口点
     graph.set_entry_point("parse")
 
-    # 普通边
-    graph.add_edge("parse",      "analyze")
-    graph.add_edge("generate",   "kg_extract")
-    graph.add_edge("kg_extract", END)
+    # 条件边（出错时也能终止，不卡在中间节点）
+    graph.add_conditional_edges(
+        "parse",
+        edges.should_parse_continue,
+        {"analyze": "analyze", "__end__": END},
+    )
 
-    # 条件边
     graph.add_conditional_edges(
         "analyze",
-        edges.should_wait_slots,
-        {
-            "wait_slots": "wait_slots",
-            "__end__": END,
-        },
+        edges.should_analyze_continue,
+        {"wait_slots": "wait_slots", "__end__": END},
     )
 
     graph.add_conditional_edges(
         "wait_slots",
         edges.should_generate,
-        {
-            "generate": "generate",
-            "__end__": END,
-        },
+        {"generate": "generate", "__end__": END},
     )
+
+    graph.add_conditional_edges(
+        "generate",
+        edges.should_generate_continue,
+        {"kg_extract": "kg_extract", "__end__": END},
+    )
+
+    graph.add_edge("kg_extract", END)
 
     return graph
 

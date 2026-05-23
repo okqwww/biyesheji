@@ -17,6 +17,7 @@ const router = createRouter({
     { path: '/agent/slots', name: 'agent-slots', component: () => import('../views/AgentSlots.vue') },
     { path: '/agent/draft', name: 'agent-draft', component: () => import('../views/AgentDraft.vue') },
     { path: '/agent/graph', name: 'agent-graph', component: () => import('../views/AgentGraph.vue') },
+    { path: '/agent/workflow-graph', name: 'agent-workflow-graph', component: () => import('../views/AgentWorkflowGraph.vue') },
   ],
 })
 

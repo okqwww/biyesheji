@@ -47,6 +47,7 @@ async function submit() {
 
     // 调用 LangGraph workflow：parse → analyze → interrupt
     await workflowStart(res.session_id)
+    // await startParse(res.session_id)
     store.parsing = true
 
     router.push('/agent/parsing')
@@ -127,7 +128,7 @@ async function submit() {
         <ul>
           <li>建议上传 <strong>2–5 年</strong> 的真题，覆盖面越广，出题质量越高</li>
           <li>同时上传含参考答案的试卷，系统将自动提取答案和评分点</li>
-          <li>PDF 需包含可读文字（非扫描版图片 PDF）</li>
+          <li>PDF 支持图片扫描版</li>
           <li>上传后系统将调用视觉大模型精准识别，包括数学公式、表格等复杂内容</li>
         </ul>
       </div>

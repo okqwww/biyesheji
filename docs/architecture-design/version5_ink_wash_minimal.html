@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ink Wash - Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: #f7f4ed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .canvas {
+            position: relative;
+            width: 950px;
+            height: 620px;
+            background:
+                linear-gradient(180deg, #faf8f3 0%, #f5f2e8 100%);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Rice paper texture */
+        .canvas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.02;
+            pointer-events: none;
+        }
+
+        /* Ink wash background strokes */
+        .ink-wash {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.08;
+        }
+
+        .ink-wash-1 {
+            width: 400px;
+            height: 200px;
+            top: 100px;
+            left: -100px;
+            background: #1a1a1a;
+        }
+
+        .ink-wash-2 {
+            width: 300px;
+            height: 150px;
+            bottom: 50px;
+            right: -50px;
+            background: #1a1a1a;
+        }
+
+        /* Red seal stamp */
+        .seal {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #c41e3a;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #c41e3a;
+            transform: rotate(-5deg);
+        }
+
+        /* Title with brush stroke effect */
+        .title {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: 8px;
+        }
+
+        .title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: #c41e3a;
+            margin-top: 8px;
+        }
+
+        /* Subtitle */
+        .subtitle {
+            position: absolute;
+            top: 75px;
+            left: 30px;
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 3px;
+        }
+
+        /* Nodes - minimal boxes with ink border */
+        .node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            background: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .node-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+
+        .node-title {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+        }
+
+        .node-subtitle {
+            font-size: 10px;
+            color: #888;
+            letter-spacing: 1px;
+        }
+
+        /* Frontend */
+        .node-frontend {
+            width: 180px;
+            padding: 20px;
+            top: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #1a1a1a;
+        }
+
+        /* Backend */
+        .node-backend {
+            width: 180px;
+            padding: 20px;
+            top: 280px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 1px solid #1a1a1a;
+        }
+
+        /* Database */
+        .node-database {
+            width: 170px;
+            padding: 18px;
+            top: 430px;
+            left: 280px;
+            border: 1px solid #1a1a1a;
+        }
+
+        /* API */
+        .node-api {
+            width: 170px;
+            padding: 18px;
+            top: 430px;
+            right: 280px;
+            border: 1px solid #1a1a1a;
+        }
+
+        /* Thin elegant connection lines */
+        .connection {
+            position: absolute;
+            background: #1a1a1a;
+            opacity: 0.3;
+        }
+
+        .conn-1 {
+            width: 1px;
+            height: 50px;
+            top: 210px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .conn-2 {
+            width: 1px;
+            height: 50px;
+            top: 360px;
+            left: calc(50% - 95px);
+        }
+
+        .conn-3 {
+            width: 1px;
+            height: 50px;
+            top: 360px;
+            left: calc(50% + 95px);
+        }
+
+        .conn-horizontal {
+            height: 1px;
+            top: 480px;
+            left: 340px;
+            right: 340px;
+        }
+
+        /* Small circles at connection points */
+        .dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #c41e3a;
+        }
+
+        .dot-1 { top: 262px; left: calc(50% - 3px); }
+        .dot-2 { top: 412px; left: calc(50% - 92px); }
+        .dot-3 { top: 412px; right: calc(50% - 92px); }
+
+        /* Connection labels - minimal text */
+        .label {
+            position: absolute;
+            font-size: 9px;
+            color: #999;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: #f7f4ed;
+            padding: 2px 8px;
+        }
+
+        .label-1 {
+            top: 230px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .label-2 {
+            top: 380px;
+            left: calc(50% - 60px);
+        }
+
+        .label-3 {
+            top: 380px;
+            right: calc(50% - 60px);
+        }
+
+        /* Decorative elements - brush stroke marks */
+        .brush-mark {
+            position: absolute;
+            background: #1a1a1a;
+            opacity: 0.05;
+            border-radius: 50%;
+        }
+
+        .brush-1 {
+            width: 100px;
+            height: 8px;
+            top: 110px;
+            left: 100px;
+            transform: rotate(-15deg);
+        }
+
+        .brush-2 {
+            width: 60px;
+            height: 6px;
+            bottom: 80px;
+            right: 150px;
+            transform: rotate(10deg);
+        }
+
+        /* Bottom info */
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #aaa;
+            letter-spacing: 2px;
+        }
+
+        .footer-left {
+            display: flex;
+            gap: 20px;
+        }
+
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #1a1a1a;
+        }
+
+        /* Vertical layer indicators on left */
+        .layer-indicators {
+            position: absolute;
+            left: 15px;
+            top: 130px;
+            display: flex;
+            flex-direction: column;
+            gap: 150px;
+        }
+
+        .layer-line {
+            width: 20px;
+            height: 1px;
+            background: #c41e3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <!-- Ink wash background -->
+        <div class="ink-wash ink-wash-1"></div>
+        <div class="ink-wash ink-wash-2"></div>
+
+        <!-- Brush marks -->
+        <div class="brush-mark brush-1"></div>
+        <div class="brush-mark brush-2"></div>
+
+        <!-- Title -->
+        <div class="title">系统架构</div>
+        <div class="subtitle">INTELLIGENT EXAM GENERATION SYSTEM</div>
+
+        <!-- Seal stamp -->
+        <div class="seal">架构</div>
+
+        <!-- Layer indicators -->
+        <div class="layer-indicators">
+            <div class="layer-line"></div>
+            <div class="layer-line"></div>
+            <div class="layer-line"></div>
+        </div>
+
+        <!-- Connection lines -->
+        <div class="connection conn-1"></div>
+        <div class="connection conn-2"></div>
+        <div class="connection conn-3"></div>
+        <div class="connection conn-horizontal"></div>
+
+        <!-- Dots -->
+        <div class="dot dot-1"></div>
+        <div class="dot dot-2"></div>
+        <div class="dot dot-3"></div>
+
+        <!-- Labels -->
+        <div class="label label-1">REST API</div>
+        <div class="label label-2">CYPHER</div>
+        <div class="label label-3">API CALL</div>
+
+        <!-- Nodes -->
+        <div class="node node-frontend">
+            <div class="node-icon">◈</div>
+            <div class="node-title">Vue 3</div>
+            <div class="node-subtitle">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-icon">◇</div>
+            <div class="node-title">FastAPI</div>
+            <div class="node-subtitle">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-icon">◆</div>
+            <div class="node-title">Neo4j</div>
+            <div class="node-subtitle">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-icon">●</div>
+            <div class="node-title">DeepSeek API</div>
+            <div class="node-subtitle">智能题目生成</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-left">
+                <div class="footer-item">
+                    <div class="footer-dot"></div>
+                    <span>Presentation</span>
+                </div>
+                <div class="footer-item">
+                    <div class="footer-dot"></div>
+                    <span>Application</span>
+                </div>
+                <div class="footer-item">
+                    <div class="footer-dot"></div>
+                    <span>Data</span>
+                </div>
+            </div>
+            <div class="footer-right">毕业设计</div>
+        </div>
+    </div>
+</body>
+</html>

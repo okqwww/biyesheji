@@ -588,6 +588,11 @@ async def get_kg_result(session_id: str):
 # LangGraph Workflow 路由（USE_LANGGRAPH=true 时启用）
 # ─────────────────────────────────────────────
 
+
+# ─────────────────────────────────────────────
+# LangGraph Workflow 路由（USE_LANGGRAPH=true 时启用）
+# ─────────────────────────────────────────────
+
 if USE_LANGGRAPH and _langgraph_workflow is not None:
     from langgraph.types import Command
 
@@ -801,3 +806,19 @@ if USE_LANGGRAPH and _langgraph_workflow is not None:
                 message=f"工作流执行出错: {error_str}",
                 error=error_str,
             )
+
+    @router.get("/workflow/graph")
+    async def workflow_graph():
+        """
+        返回 LangGraph 工作流的 Mermaid 图定义，用于可视化。
+        前端可直接渲染 Mermaid 图。
+        """
+        try:
+            diagram = _langgraph_workflow.get_graph().draw_mermaid()
+            # draw_mermaid() 返回 str（某些版本返回 bytes）
+            if isinstance(diagram, bytes):
+                diagram = diagram.decode('utf-8')
+            return {"mermaid": diagram}
+        except Exception as exc:
+            logger.exception("生成 workflow Mermaid 图出错")
+            return {"error": str(exc), "mermaid": None}

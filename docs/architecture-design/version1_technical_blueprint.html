@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Blueprint - Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0a1628;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Blueprint grid pattern */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        /* Subtle vignette */
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(10, 22, 40, 0.8) 100%);
+            pointer-events: none;
+        }
+
+        .canvas {
+            position: relative;
+            width: 900px;
+            height: 600px;
+            background: linear-gradient(135deg, #0d1f35 0%, #0a1628 100%);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 4px;
+            box-shadow:
+                0 0 60px rgba(0, 255, 255, 0.05),
+                inset 0 0 100px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Corner decorations */
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: rgba(0, 255, 255, 0.4);
+            border-style: solid;
+        }
+        .corner-tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+        .corner-tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+        .corner-bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; }
+        .corner-br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+        /* Title */
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 300;
+            color: rgba(0, 255, 255, 0.6);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        /* Version number */
+        .version {
+            position: absolute;
+            top: 20px;
+            right: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: rgba(255, 200, 100, 0.5);
+            letter-spacing: 2px;
+        }
+
+        /* Node styles */
+        .node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            transform: scale(1.02);
+        }
+
+        .node-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .node-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .node-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            font-weight: 300;
+            opacity: 0.8;
+        }
+
+        /* Frontend - Cyan theme */
+        .node-frontend {
+            width: 160px;
+            height: 100px;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, rgba(0, 180, 216, 0.15), rgba(0, 180, 216, 0.05));
+            border: 1px solid rgba(0, 180, 216, 0.4);
+            box-shadow:
+                0 0 20px rgba(0, 180, 216, 0.1),
+                inset 0 0 30px rgba(0, 180, 216, 0.05);
+        }
+        .node-frontend .node-title { color: #00b4d8; }
+        .node-frontend .node-subtitle { color: rgba(0, 180, 216, 0.7); }
+
+        /* Backend - Purple theme */
+        .node-backend {
+            width: 160px;
+            height: 100px;
+            top: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, rgba(167, 139, 250, 0.15), rgba(167, 139, 250, 0.05));
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            box-shadow:
+                0 0 20px rgba(167, 139, 250, 0.1),
+                inset 0 0 30px rgba(167, 139, 250, 0.05);
+        }
+        .node-backend .node-title { color: #a78bfa; }
+        .node-backend .node-subtitle { color: rgba(167, 139, 250, 0.7); }
+
+        /* Database - Green theme */
+        .node-database {
+            width: 160px;
+            height: 100px;
+            top: 360px;
+            left: 280px;
+            background: linear-gradient(145deg, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0.05));
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            box-shadow:
+                0 0 20px rgba(52, 211, 153, 0.1),
+                inset 0 0 30px rgba(52, 211, 153, 0.05);
+        }
+        .node-database .node-title { color: #34d399; }
+        .node-database .node-subtitle { color: rgba(52, 211, 153, 0.7); }
+
+        /* API - Amber theme */
+        .node-api {
+            width: 160px;
+            height: 100px;
+            top: 360px;
+            right: 280px;
+            background: linear-gradient(145deg, rgba(251, 191, 36, 0.15), rgba(251, 191, 36, 0.05));
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            box-shadow:
+                0 0 20px rgba(251, 191, 36, 0.1),
+                inset 0 0 30px rgba(251, 191, 36, 0.05);
+        }
+        .node-api .node-title { color: #fbbf24; }
+        .node-api .node-subtitle { color: rgba(251, 191, 36, 0.7); }
+
+        /* Connection lines */
+        .connection {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Vertical line from frontend to backend */
+        .conn-1 {
+            width: 1px;
+            height: 40px;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to bottom, rgba(0, 180, 216, 0.5), rgba(167, 139, 250, 0.5));
+        }
+
+        /* Vertical line from backend to database */
+        .conn-2 {
+            width: 1px;
+            height: 40px;
+            top: 320px;
+            left: 380px;
+            background: linear-gradient(to bottom, rgba(167, 139, 250, 0.5), rgba(52, 211, 153, 0.5));
+        }
+
+        /* Vertical line from backend to API */
+        .conn-3 {
+            width: 1px;
+            height: 40px;
+            top: 320px;
+            right: 380px;
+            background: linear-gradient(to bottom, rgba(167, 139, 250, 0.5), rgba(251, 191, 36, 0.5));
+        }
+
+        /* Horizontal connection between database and API */
+        .conn-4 {
+            width: 160px;
+            height: 1px;
+            top: 410px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, rgba(52, 211, 153, 0.3), rgba(251, 191, 36, 0.3));
+        }
+
+        /* Connection labels */
+        .conn-label {
+            position: absolute;
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: nowrap;
+        }
+
+        .label-1 { top: 195px; left: 50%; transform: translateX(-50%); }
+        .label-2 { top: 335px; left: 330px; color: rgba(52, 211, 153, 0.5); }
+        .label-3 { top: 335px; right: 330px; color: rgba(251, 191, 36, 0.5); }
+
+        /* Decorative elements */
+        .dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(0, 255, 255, 0.3);
+        }
+
+        .dot-1 { top: 185px; left: calc(50% - 2px); }
+        .dot-2 { top: 325px; left: 375px; }
+        .dot-3 { top: 325px; right: 375px; }
+
+        /* Circuit decorations */
+        .circuit {
+            position: absolute;
+            border: 1px solid rgba(0, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .circuit-1 {
+            top: 50px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+        }
+
+        .circuit-2 {
+            bottom: 50px;
+            right: 30px;
+            width: 80px;
+            height: 40px;
+        }
+
+        /* Data flow animation dots */
+        @keyframes flowDown {
+            0% { opacity: 0; transform: translateY(0); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
+        .flow-dot {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            animation: flowDown 2s ease-in-out infinite;
+        }
+
+        .flow-1 { background: #00b4d8; left: calc(50% - 1.5px); top: 185px; animation-delay: 0s; }
+        .flow-2 { background: #34d399; left: 377px; top: 325px; animation-delay: 0.3s; }
+        .flow-3 { background: #fbbf24; right: 377px; top: 325px; animation-delay: 0.6s; }
+
+        /* Bottom legend */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 30px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .legend-frontend .legend-dot { background: #00b4d8; }
+        .legend-backend .legend-dot { background: #a78bfa; }
+        .legend-database .legend-dot { background: #34d399; }
+        .legend-api .legend-dot { background: #fbbf24; }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <!-- Corner decorations -->
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <!-- Title -->
+        <div class="title">System Architecture</div>
+        <div class="version">v2.0 // blueprint</div>
+
+        <!-- Circuit decorations -->
+        <div class="circuit circuit-1"></div>
+        <div class="circuit circuit-2"></div>
+
+        <!-- Connection lines -->
+        <div class="connection conn-1"></div>
+        <div class="connection conn-2"></div>
+        <div class="connection conn-3"></div>
+        <div class="connection conn-4"></div>
+
+        <!-- Flow dots -->
+        <div class="flow-dot flow-1"></div>
+        <div class="flow-dot flow-2"></div>
+        <div class="flow-dot flow-3"></div>
+
+        <!-- Connection labels -->
+        <div class="conn-label label-1">HTTP/REST</div>
+        <div class="conn-label label-2">CYPHER</div>
+        <div class="conn-label label-3">API CALL</div>
+
+        <!-- Nodes -->
+        <div class="node node-frontend">
+            <div class="node-icon">⚡</div>
+            <div class="node-title">Vue 3</div>
+            <div class="node-subtitle">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-icon">◈</div>
+            <div class="node-title">FastAPI</div>
+            <div class="node-subtitle">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-icon">⬡</div>
+            <div class="node-title">Neo4j</div>
+            <div class="node-subtitle">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-icon">◉</div>
+            <div class="node-title">DeepSeek API</div>
+            <div class="node-subtitle">智能题目生成</div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item legend-frontend">
+                <div class="legend-dot"></div>
+                <span>Frontend</span>
+            </div>
+            <div class="legend-item legend-backend">
+                <div class="legend-dot"></div>
+                <span>Backend</span>
+            </div>
+            <div class="legend-item legend-database">
+                <div class="legend-dot"></div>
+                <span>Database</span>
+            </div>
+            <div class="legend-item legend-api">
+                <div class="legend-dot"></div>
+                <span>AI Service</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

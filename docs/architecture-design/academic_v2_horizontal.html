@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术风格架构图 - 横向</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimSun", sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .canvas {
+            width: 700px;
+            height: 320px;
+            border: none;
+        }
+
+        /* 标题 */
+        .title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000;
+        }
+
+        /* 容器 */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        /* 列 */
+        .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 层标签 */
+        .layer-name {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 15px;
+            padding: 3px 10px;
+            border: 1px solid #ddd;
+        }
+
+        /* 节点 */
+        .node {
+            width: 140px;
+            padding: 15px 10px;
+            text-align: center;
+            border: 1px solid #000;
+            background: #fff;
+            margin-bottom: 8px;
+        }
+
+        .node-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .node-desc {
+            font-size: 9px;
+            color: #666;
+        }
+
+        /* 连接线 */
+        .connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 15px;
+        }
+
+        .connector-line {
+            width: 1px;
+            height: 30px;
+            background: #000;
+        }
+
+        .connector-arrow {
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #000;
+        }
+
+        .connector-label {
+            font-size: 8px;
+            color: #666;
+            margin: 8px 0;
+        }
+
+        /* 横向连接 */
+        .horizontal-line {
+            width: 40px;
+            height: 1px;
+            background: #000;
+        }
+
+        .horizontal-arrow {
+            width: 0;
+            height: 0;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            border-left: 5px solid #000;
+        }
+
+        /* 底部说明 */
+        .note {
+            text-align: center;
+            font-size: 9px;
+            color: #999;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <div class="title">图 2-1 系统总体架构图</div>
+
+        <div class="container">
+            <!-- 第一层：前端 -->
+            <div class="column">
+                <div class="layer-name">表现层</div>
+                <div class="node">
+                    <div class="node-title">Vue 3</div>
+                    <div class="node-desc">Element Plus<br>ECharts + Axios</div>
+                </div>
+            </div>
+
+            <!-- 连接线1 -->
+            <div class="connector">
+                <div class="connector-line"></div>
+                <div class="connector-arrow"></div>
+                <div class="connector-label">HTTP/REST</div>
+            </div>
+
+            <!-- 第二层：后端 -->
+            <div class="column">
+                <div class="layer-name">应用层</div>
+                <div class="node">
+                    <div class="node-title">FastAPI</div>
+                    <div class="node-desc">Python 3.10+<br>Uvicorn</div>
+                </div>
+            </div>
+
+            <!-- 连接线2 -->
+            <div class="connector">
+                <div class="connector-line"></div>
+                <div class="connector-arrow"></div>
+                <div class="connector-label">Cypher / API</div>
+            </div>
+
+            <!-- 第三层：数据与服务 -->
+            <div class="column">
+                <div class="layer-name">数据层 / 服务层</div>
+                <div style="display: flex; gap: 20px;">
+                    <div class="node">
+                        <div class="node-title">Neo4j</div>
+                        <div class="node-desc">知识图谱<br>题目存储</div>
+                    </div>
+                    <div class="node">
+                        <div class="node-title">DeepSeek</div>
+                        <div class="node-desc">智能题目<br>生成</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note">图 2-1 展示了本系统的四层架构：表现层负责用户交互，应用层处理业务逻辑，数据层存储知识图谱，服务层提供AI能力</div>
+    </div>
+</body>
+</html>

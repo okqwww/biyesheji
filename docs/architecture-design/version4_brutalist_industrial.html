@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brutalist Industrial - Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Teko:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Teko', sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .canvas {
+            position: relative;
+            width: 1000px;
+            height: 700px;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,0.03) 2px,
+                    rgba(0,0,0,0.03) 4px
+                ),
+                linear-gradient(180deg, #2d2d2d 0%, #1a1a1a 100%);
+            border: 4px solid #3d3d3d;
+        }
+
+        /* Concrete texture overlay */
+        .canvas::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        /* Heavy title */
+        .main-title {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 72px;
+            line-height: 1;
+            color: #3d3d3d;
+            letter-spacing: 8px;
+        }
+
+        /* Layer indicators */
+        .layer-box {
+            position: absolute;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .layer-indicator {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        .layer-indicator.active {
+            color: #e65100;
+        }
+
+        /* Nodes - brutalist rectangles */
+        .node {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px 25px;
+            transition: all 0.2s ease;
+        }
+
+        .node:hover {
+            background: #404040 !important;
+        }
+
+        .node-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            line-height: 1;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .node-subtitle {
+            font-size: 14px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            opacity: 0.7;
+        }
+
+        /* Frontend - Steel Blue */
+        .node-frontend {
+            width: 240px;
+            height: 90px;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #263238;
+            border-left: 6px solid #4fc3f7;
+        }
+        .node-frontend .node-title { color: #4fc3f7; }
+
+        /* Backend - Purple */
+        .node-backend {
+            width: 240px;
+            height: 90px;
+            top: 270px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #263238;
+            border-left: 6px solid #b388ff;
+        }
+        .node-backend .node-title { color: #b388ff; }
+
+        /* Database - Green */
+        .node-database {
+            width: 220px;
+            height: 85px;
+            top: 440px;
+            left: 220px;
+            background: #263238;
+            border-left: 6px solid #69f0ae;
+        }
+        .node-database .node-title { color: #69f0ae; }
+
+        /* API - Rust Orange */
+        .node-api {
+            width: 220px;
+            height: 85px;
+            top: 440px;
+            right: 220px;
+            background: #263238;
+            border-left: 6px solid #ff6e40;
+        }
+        .node-api .node-title { color: #ff6e40; }
+
+        /* Brutalist connection lines - thick, solid */
+        .connector {
+            position: absolute;
+            background: #404040;
+        }
+
+        /* Vertical connectors */
+        .conn-v1 {
+            width: 4px;
+            height: 80px;
+            top: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4fc3f7;
+        }
+
+        .conn-v2 {
+            width: 4px;
+            height: 80px;
+            top: 360px;
+            left: calc(50% - 130px);
+            background: #69f0ae;
+        }
+
+        .conn-v3 {
+            width: 4px;
+            height: 80px;
+            top: 360px;
+            left: calc(50% + 130px);
+            background: #ff6e40;
+        }
+
+        /* Horizontal connector */
+        .conn-h {
+            height: 4px;
+            top: 482px;
+            left: 320px;
+            right: 320px;
+            background: #404040;
+        }
+
+        /* Connection labels - industrial tags */
+        .tag {
+            position: absolute;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+        }
+
+        .tag-1 {
+            top: 230px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #4fc3f7;
+            border-color: #4fc3f7;
+        }
+
+        .tag-2 {
+            top: 395px;
+            left: calc(50% - 90px);
+            color: #69f0ae;
+            border-color: #69f0ae;
+        }
+
+        .tag-3 {
+            top: 395px;
+            right: calc(50% - 90px);
+            color: #ff6e40;
+            border-color: #ff6e40;
+        }
+
+        /* Industrial decoration - hazard stripes */
+        .hazard-stripe {
+            position: absolute;
+            height: 8px;
+            left: 0;
+            right: 0;
+            background: repeating-linear-gradient(
+                45deg,
+                #ff6e40,
+                #ff6e40 10px,
+                #1a1a1a 10px,
+                #1a1a1a 20px
+            );
+        }
+
+        .hazard-top { top: 0; }
+        .hazard-bottom { bottom: 0; }
+
+        /* Bottom info */
+        .info-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-left {
+            display: flex;
+            gap: 30px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: #666;
+        }
+
+        .info-square {
+            width: 12px;
+            height: 12px;
+            background: #404040;
+        }
+
+        .square-frontend { background: #4fc3f7; }
+        .square-backend { background: #b388ff; }
+        .square-database { background: #69f0ae; }
+        .square-api { background: #ff6e40; }
+
+        .info-right {
+            font-size: 14px;
+            letter-spacing: 2px;
+            color: #555;
+        }
+
+        /* Version number */
+        .version {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #e65100;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas">
+        <!-- Hazard stripes -->
+        <div class="hazard-stripe hazard-top"></div>
+        <div class="hazard-stripe hazard-bottom"></div>
+
+        <!-- Title -->
+        <div class="main-title">ARCHITECTURE</div>
+
+        <!-- Version -->
+        <div class="version">V.2.0</div>
+
+        <!-- Layer indicators -->
+        <div class="layer-box">
+            <div class="layer-indicator active">01 PRESENTATION</div>
+            <div class="layer-indicator">02 APPLICATION</div>
+            <div class="layer-indicator">03 DATA SERVICE</div>
+        </div>
+
+        <!-- Vertical connectors -->
+        <div class="connector conn-v1"></div>
+        <div class="connector conn-v2"></div>
+        <div class="connector conn-v3"></div>
+        <div class="connector conn-h"></div>
+
+        <!-- Tags -->
+        <div class="tag tag-1">REST API</div>
+        <div class="tag tag-2">CYPHER</div>
+        <div class="tag tag-3">LLM CALL</div>
+
+        <!-- Nodes -->
+        <div class="node node-frontend">
+            <div class="node-title">VUE 3</div>
+            <div class="node-subtitle">Element Plus + ECharts + Axios</div>
+        </div>
+
+        <div class="node node-backend">
+            <div class="node-title">FASTAPI</div>
+            <div class="node-subtitle">Python 3.10+ / Uvicorn</div>
+        </div>
+
+        <div class="node node-database">
+            <div class="node-title">NEO4J</div>
+            <div class="node-subtitle">知识图谱·题目存储</div>
+        </div>
+
+        <div class="node node-api">
+            <div class="node-title">DEEPSEEK</div>
+            <div class="node-subtitle">智能题目生成</div>
+        </div>
+
+        <!-- Info bar -->
+        <div class="info-bar">
+            <div class="info-left">
+                <div class="info-item">
+                    <div class="info-square square-frontend"></div>
+                    <span>FRONTEND</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-square square-backend"></div>
+                    <span>BACKEND</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-square square-database"></div>
+                    <span>DATABASE</span>
+                </div>
+                <div class="info-item">
+                    <div class="info-square square-api"></div>
+                    <span>AI SERVICE</span>
+                </div>
+            </div>
+            <div class="info-right">INTELLIGENT EXAM SYSTEM</div>
+        </div>
+    </div>
+</body>
+</html>
